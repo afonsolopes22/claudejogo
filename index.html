@@ -1,0 +1,633 @@
+<!doctype html>
+<html lang="pt">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#0b1d14">
+<title>8 Ball Pool</title>
+<style>
+  :root { --bg:#0b1d14; --panel:#12301f; --accent:#ffd54a; --txt:#f2f7f4; --dim:#8fb5a0; }
+  * { box-sizing:border-box; -webkit-tap-highlight-color:transparent; user-select:none; -webkit-user-select:none; }
+  html,body { margin:0; height:100%; background:var(--bg); color:var(--txt); font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif; overflow:hidden; overscroll-behavior:none; }
+  #app { position:fixed; inset:0; display:flex; flex-direction:column; padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left); }
+  #hud { display:flex; gap:8px; padding:8px; align-items:stretch; }
+  .player { flex:1; background:var(--panel); border:2px solid transparent; border-radius:12px; padding:6px 10px; min-width:0; transition:border-color .2s, background .2s; }
+  .player.active { border-color:var(--accent); background:#1a4229; }
+  .player .name { font-weight:700; font-size:14px; display:flex; justify-content:space-between; gap:6px; }
+  .player .grp { color:var(--dim); font-weight:500; font-size:12px; }
+  .dots { display:flex; flex-wrap:wrap; gap:3px; margin-top:4px; min-height:14px; }
+  .dot { width:14px; height:14px; border-radius:50%; border:1px solid rgba(0,0,0,.4); position:relative; overflow:hidden; }
+  .dot.stripe::before { content:""; position:absolute; left:0; right:0; top:3px; bottom:3px; background:#fff; }
+  #stage { flex:1; position:relative; min-height:0; }
+  canvas { position:absolute; inset:0; width:100%; height:100%; touch-action:none; }
+  #toast { position:absolute; left:50%; top:10px; transform:translateX(-50%); background:rgba(0,0,0,.72); padding:7px 14px; border-radius:20px; font-size:14px; font-weight:600; pointer-events:none; opacity:0; transition:opacity .25s; text-align:center; max-width:90%; }
+  #toast.show { opacity:1; }
+  #powerWrap { padding:8px 14px 12px; }
+  #powerLabel { font-size:12px; color:var(--dim); display:flex; justify-content:space-between; margin-bottom:4px; }
+  #power { height:44px; border-radius:22px; background:#06140c; border:2px solid #2c6a45; position:relative; touch-action:none; overflow:hidden; }
+  #powerFill { position:absolute; left:0; top:0; bottom:0; width:0; background:linear-gradient(90deg,#43d17a,#ffd54a 60%,#ff5a4a); }
+  #powerText { position:absolute; inset:0; display:flex; align-items:center; justify-content:center; font-weight:700; letter-spacing:.5px; text-shadow:0 1px 3px #000; pointer-events:none; }
+  #power.disabled { opacity:.45; pointer-events:none; }
+  .overlay { position:fixed; inset:0; background:rgba(4,12,8,.88); display:none; flex-direction:column; align-items:center; justify-content:center; gap:14px; z-index:10; padding:24px; text-align:center; }
+  .overlay.show { display:flex; }
+  .overlay h1 { margin:0; font-size:34px; }
+  .overlay p { margin:0; color:var(--dim); max-width:320px; line-height:1.4; font-size:14px; }
+  button { font:inherit; font-weight:700; font-size:18px; padding:14px 26px; border-radius:14px; border:0; background:var(--accent); color:#222; min-width:230px; cursor:pointer; }
+  button.alt { background:#2c6a45; color:#fff; }
+  #menuBtn { position:absolute; right:8px; bottom:8px; min-width:0; font-size:12px; padding:6px 12px; border-radius:10px; background:rgba(0,0,0,.45); color:#fff; }
+</style>
+</head>
+<body>
+<div id="app">
+  <div id="hud">
+    <div class="player" id="p0"><div class="name"><span id="n0">Tu</span><span class="grp" id="g0"></span></div><div class="dots" id="d0"></div></div>
+    <div class="player" id="p1"><div class="name"><span id="n1">CPU</span><span class="grp" id="g1"></span></div><div class="dots" id="d1"></div></div>
+  </div>
+  <div id="stage">
+    <canvas id="cv"></canvas>
+    <div id="toast"></div>
+    <button id="menuBtn" class="alt">Menu</button>
+  </div>
+  <div id="powerWrap">
+    <div id="powerLabel"><span>Arrasta na mesa para apontar</span><span>Arrasta aqui e larga para bater</span></div>
+    <div id="power" class="disabled"><div id="powerFill"></div><div id="powerText">FORÇA</div></div>
+  </div>
+</div>
+
+<div class="overlay show" id="menu">
+  <h1>🎱 8 Ball Pool</h1>
+  <p>Mete as tuas bolas (lisas ou riscadas) e depois a bola 8. Toca na mesa para apontar e puxa a barra de força para tacar.</p>
+  <button id="btnCpu">Jogar contra CPU</button>
+  <button id="btn2p" class="alt">2 Jogadores</button>
+</div>
+<div class="overlay" id="over">
+  <h1 id="overTitle"></h1>
+  <p id="overMsg"></p>
+  <button id="btnAgain">Jogar outra vez</button>
+  <button id="btnMenu" class="alt">Menu</button>
+</div>
+
+<script>
+(() => {
+'use strict';
+
+// ---------- Constantes da mesa ----------
+const W = 396, H = 736, RAIL = 28;
+const L = RAIL, Rr = W - RAIL, T = RAIL, B = H - RAIL;
+const BR = 11;                      // raio da bola
+const MIDY = (T + B) / 2;
+const POCKETS = [
+  { x: L,  y: T,    r: 25, vr: 21 }, { x: Rr, y: T,    r: 25, vr: 21 },
+  { x: L,  y: MIDY, r: 20, vr: 17 }, { x: Rr, y: MIDY, r: 20, vr: 17 },
+  { x: L,  y: B,    r: 25, vr: 21 }, { x: Rr, y: B,    r: 25, vr: 21 },
+];
+const COLORS = ['#f4f4f4','#f5c518','#1e50c8','#d92b2b','#6a2fa0','#f57c1f','#1f8a3c','#7a1f1f','#111'];
+const MAX_SPEED = 1900, CUSHION_E = 0.78, BALL_E = 0.96;
+const SUB = 1 / 240;
+
+// ---------- Elementos ----------
+const cv = document.getElementById('cv'), ctx = cv.getContext('2d');
+const $ = id => document.getElementById(id);
+const powerEl = $('power'), powerFill = $('powerFill'), powerText = $('powerText');
+const toastEl = $('toast');
+
+// ---------- Estado ----------
+let balls = [], cue = null;
+let mode = 'cpu';           // 'cpu' | '2p'
+let state = 'menu';         // menu | aim | moving | over
+let turn = 0;               // 0 ou 1
+let groups = [null, null];  // 'solid' | 'stripe'
+let ballInHand = false;
+let aimAngle = -Math.PI / 2;
+let power = 0;
+let shot = null;
+let firstBreak = true;
+let cpuTimer = null;
+let pullAnim = 0;           // 0..1, animação do taco
+let view = { s: 1, ox: 0, oy: 0 };
+let toastTimer = 0;
+
+// ---------- Áudio ----------
+let actx = null;
+function audio() {
+  if (!actx) { try { actx = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) {} }
+  if (actx && actx.state === 'suspended') actx.resume();
+}
+function blip(freq, vol, dur, type) {
+  if (!actx) return;
+  const o = actx.createOscillator(), g = actx.createGain();
+  o.type = type || 'triangle'; o.frequency.value = freq;
+  g.gain.setValueAtTime(Math.min(vol, 0.6), actx.currentTime);
+  g.gain.exponentialRampToValueAtTime(0.001, actx.currentTime + dur);
+  o.connect(g); g.connect(actx.destination);
+  o.start(); o.stop(actx.currentTime + dur);
+}
+const sndHit = v => blip(900 + Math.random() * 200, v / 1200, 0.07, 'square');
+const sndRail = v => blip(160, v / 1500, 0.09, 'sine');
+const sndPocket = () => { blip(110, 0.4, 0.25, 'sine'); if (navigator.vibrate) navigator.vibrate(25); };
+
+// ---------- Bolas ----------
+function mk(n, x, y) { return { n, x, y, vx: 0, vy: 0, alive: true, sink: 0 }; }
+const isSolid = n => n >= 1 && n <= 7;
+const isStripe = n => n >= 9;
+const groupOf = n => n === 8 ? 'eight' : (isSolid(n) ? 'solid' : 'stripe');
+
+function rack() {
+  balls = [];
+  cue = mk(0, W / 2, 540);
+  balls.push(cue);
+  // sequência aleatória, 8 no centro, cantos de trás com um lisa e uma riscada
+  const rest = [1,2,3,4,5,6,7,9,10,11,12,13,14,15];
+  for (let i = rest.length - 1; i > 0; i--) { const j = Math.random() * (i + 1) | 0; [rest[i], rest[j]] = [rest[j], rest[i]]; }
+  // um lisa e uma riscada nos cantos de trás
+  const order = rest.slice();
+  const slots = new Array(15);
+  slots[4] = 8;
+  const corners = [10, 14];
+  const solid = order.find(n => isSolid(n)), stripe = order.find(n => isStripe(n));
+  slots[corners[0]] = solid; slots[corners[1]] = stripe;
+  const others = order.filter(n => n !== solid && n !== stripe);
+  for (let i = 0, k = 0; i < 15; i++) if (slots[i] == null) slots[i] = others[k++];
+  const dx = BR * 2 * 1.002, dy = Math.sqrt(3) * BR * 1.002;
+  let idx = 0;
+  const apexY = 250;
+  for (let r = 0; r < 5; r++) {
+    for (let c = 0; c <= r; c++) {
+      const x = W / 2 + (c - r / 2) * dx, y = apexY - r * dy;
+      balls.push(mk(slots[idx++], x, y));
+    }
+  }
+}
+
+// ---------- Início de jogo ----------
+function newGame(m) {
+  mode = m;
+  rack();
+  turn = 0; groups = [null, null]; ballInHand = false; firstBreak = true;
+  aimAngle = -Math.PI / 2; power = 0; shot = null;
+  $('n0').textContent = m === 'cpu' ? 'Tu' : 'Jogador 1';
+  $('n1').textContent = m === 'cpu' ? 'CPU' : 'Jogador 2';
+  $('menu').classList.remove('show'); $('over').classList.remove('show');
+  clearTimeout(cpuTimer);
+  state = 'aim';
+  updateHud();
+  startTurn('Abertura! Bate na bola branca.');
+}
+
+function isCpuTurn() { return mode === 'cpu' && turn === 1; }
+
+function startTurn(msg) {
+  state = 'aim'; power = 0; setPower(0);
+  if (msg) toast(msg);
+  const human = !isCpuTurn();
+  powerEl.classList.toggle('disabled', !human);
+  updateHud();
+  if (!human) cpuTimer = setTimeout(cpuPlay, 900);
+}
+
+// ---------- Regras ----------
+const remaining = g => balls.filter(b => b.alive && b.n && groupOf(b.n) === g).length;
+function ownCleared(p) { return groups[p] && remaining(groups[p]) === 0; }
+function legalTargets(p) {
+  const alive = balls.filter(b => b.alive && b.n);
+  if (!groups[p]) return alive.filter(b => b.n !== 8);
+  if (ownCleared(p)) return alive.filter(b => b.n === 8);
+  return alive.filter(b => groupOf(b.n) === groups[p]);
+}
+
+function resolveShot() {
+  const p = turn, opp = 1 - p;
+  const sunk = shot.pocketed;            // números de bolas metidas (sem a branca)
+  const scratch = shot.scratch;
+  let foul = scratch;
+  let foulWhy = scratch ? 'Falta: meteste a bola branca.' : '';
+  if (shot.first == null) { foul = true; foulWhy = foulWhy || 'Falta: não tocaste em nenhuma bola.'; }
+  else {
+    const legal = legalTargetsBefore.includes(shot.first);
+    if (!legal) { foul = true; foulWhy = foulWhy || 'Falta: bola errada.'; }
+  }
+
+  // bola 8
+  if (sunk.includes(8)) {
+    const wasCleared = clearedBefore;
+    const win = !foul && wasCleared;
+    return endGame(win ? p : opp, win ? 'Meteste a bola 8!' : (foul ? 'Bola 8 metida com falta.' : 'Bola 8 metida antes do tempo.'));
+  }
+
+  // atribuir grupos na mesa aberta
+  if (!groups[p] && !foul && sunk.length) {
+    const g = groupOf(sunk[0]);
+    groups[p] = g; groups[opp] = g === 'solid' ? 'stripe' : 'solid';
+    toast(`${pName(p)} joga com as ${g === 'solid' ? 'lisas' : 'riscadas'}`);
+  }
+
+  let keep = false;
+  if (!foul) {
+    if (!groupsBefore0 && sunk.length) keep = true;          // mesa aberta, meteu algo
+    else keep = sunk.some(n => groupOf(n) === groups[p]);
+  }
+
+  updateHud();
+  if (foul) {
+    if (scratch) { cue.alive = true; cue.x = W / 2; cue.y = 540; cue.vx = cue.vy = 0; }
+    ballInHand = true;
+    turn = opp;
+    startTurn(foulWhy + ` ${pName(turn)} tem bola na mão.`);
+  } else if (keep) {
+    ballInHand = false;
+    startTurn(`${pName(p)} continua.`);
+  } else {
+    ballInHand = false;
+    turn = opp;
+    startTurn(`Vez de ${pName(turn)}.`);
+  }
+}
+let legalTargetsBefore = [], clearedBefore = false, groupsBefore0 = false;
+const pName = p => $('n' + p).textContent;
+
+function endGame(winner, why) {
+  state = 'over'; clearTimeout(cpuTimer);
+  updateHud();
+  $('overTitle').textContent = mode === 'cpu' ? (winner === 0 ? '🏆 Ganhaste!' : '😢 Perdeste') : `🏆 ${pName(winner)} ganha!`;
+  $('overMsg').textContent = why;
+  setTimeout(() => $('over').classList.add('show'), 700);
+}
+
+// ---------- Tacada ----------
+function fire(angle, pw) {
+  audio();
+  legalTargetsBefore = legalTargets(turn).map(b => b.n);
+  clearedBefore = ownCleared(turn);
+  groupsBefore0 = !!groups[turn];
+  shot = { first: null, pocketed: [], scratch: false };
+  // animação do taco: curta
+  state = 'moving';
+  powerEl.classList.add('disabled');
+  cue.vx = Math.cos(angle) * MAX_SPEED * pw;
+  cue.vy = Math.sin(angle) * MAX_SPEED * pw;
+  ballInHand = false;
+  firstBreak = false;
+  blip(300, pw * 0.7, 0.08, 'square');
+}
+
+// ---------- Física ----------
+function step(dt) {
+  const bs = balls;
+  for (const b of bs) {
+    if (!b.alive) continue;
+    b.x += b.vx * dt; b.y += b.vy * dt;
+    const sp = Math.hypot(b.vx, b.vy);
+    if (sp > 0) {
+      const ns = Math.max(0, sp - (55 + sp * 0.28) * dt);
+      const k = ns / sp; b.vx *= k; b.vy *= k;
+      if (ns < 6) { b.vx = 0; b.vy = 0; }
+    }
+    // caçapas
+    for (const pk of POCKETS) {
+      if (Math.hypot(b.x - pk.x, b.y - pk.y) < pk.r) { pocket(b); break; }
+    }
+    if (!b.alive) continue;
+    // tabelas
+    if (b.x < L + BR)  { b.x = L + BR;  if (b.vx < 0) { sndRail(-b.vx); b.vx = -b.vx * CUSHION_E; } }
+    if (b.x > Rr - BR) { b.x = Rr - BR; if (b.vx > 0) { sndRail(b.vx);  b.vx = -b.vx * CUSHION_E; } }
+    if (b.y < T + BR)  { b.y = T + BR;  if (b.vy < 0) { sndRail(-b.vy); b.vy = -b.vy * CUSHION_E; } }
+    if (b.y > B - BR)  { b.y = B - BR;  if (b.vy > 0) { sndRail(b.vy);  b.vy = -b.vy * CUSHION_E; } }
+  }
+  for (let i = 0; i < bs.length; i++) {
+    const a = bs[i]; if (!a.alive) continue;
+    for (let j = i + 1; j < bs.length; j++) {
+      const c = bs[j]; if (!c.alive) continue;
+      let dx = c.x - a.x, dy = c.y - a.y;
+      const d2 = dx * dx + dy * dy, md = BR * 2;
+      if (d2 >= md * md || d2 === 0) continue;
+      const d = Math.sqrt(d2); dx /= d; dy /= d;
+      const ov = (md - d) / 2;
+      a.x -= dx * ov; a.y -= dy * ov; c.x += dx * ov; c.y += dy * ov;
+      const vr = (a.vx - c.vx) * dx + (a.vy - c.vy) * dy;
+      if (vr > 0) {
+        const jn = vr * (1 + BALL_E) / 2;
+        a.vx -= jn * dx; a.vy -= jn * dy; c.vx += jn * dx; c.vy += jn * dy;
+        if (vr > 20) sndHit(vr);
+        if (shot && shot.first == null && (a === cue || c === cue)) shot.first = (a === cue ? c : a).n;
+      }
+    }
+  }
+}
+
+function pocket(b) {
+  b.alive = false; b.vx = b.vy = 0;
+  sndPocket();
+  if (b === cue) { if (shot) shot.scratch = true; }
+  else if (shot) { shot.pocketed.push(b.n); }
+  updateHud();
+}
+
+function anyMoving() { return balls.some(b => b.alive && (b.vx || b.vy)); }
+
+// ---------- Mira / previsão ----------
+function predict(angle) {
+  const dx = Math.cos(angle), dy = Math.sin(angle);
+  let best = { t: 1e9, hit: null };
+  // tabelas (centro da bola)
+  if (dx > 0) best = minT(best, (Rr - BR - cue.x) / dx, null);
+  if (dx < 0) best = minT(best, (L + BR - cue.x) / dx, null);
+  if (dy > 0) best = minT(best, (B - BR - cue.y) / dy, null);
+  if (dy < 0) best = minT(best, (T + BR - cue.y) / dy, null);
+  for (const b of balls) {
+    if (b === cue || !b.alive) continue;
+    const fx = cue.x - b.x, fy = cue.y - b.y;
+    const bb = fx * dx + fy * dy, cc = fx * fx + fy * fy - 4 * BR * BR;
+    const disc = bb * bb - cc;
+    if (disc < 0) continue;
+    const t = -bb - Math.sqrt(disc);
+    if (t > 0) best = minT(best, t, b);
+  }
+  const gx = cue.x + dx * best.t, gy = cue.y + dy * best.t;
+  return { gx, gy, hit: best.hit };
+}
+function minT(best, t, hit) { return t > 0 && t < best.t ? { t, hit } : best; }
+
+// ---------- CPU ----------
+function segDist(px, py, ax, ay, bx, by) {
+  const abx = bx - ax, aby = by - ay, l2 = abx * abx + aby * aby;
+  let t = l2 ? ((px - ax) * abx + (py - ay) * aby) / l2 : 0;
+  t = Math.max(0, Math.min(1, t));
+  return Math.hypot(px - (ax + abx * t), py - (ay + aby * t));
+}
+function cpuPlay() {
+  if (state !== 'aim' || !isCpuTurn()) return;
+  if (ballInHand) {
+    // posição simples e livre
+    for (let k = 0; k < 60; k++) {
+      const x = L + 40 + Math.random() * (Rr - L - 80), y = 420 + Math.random() * (B - 420 - 40);
+      if (freeSpot(x, y)) { cue.x = x; cue.y = y; break; }
+    }
+    ballInHand = false;
+  }
+  const targets = legalTargets(1);
+  let best = null;
+  for (const b of targets) {
+    for (const pk of POCKETS) {
+      let ux = pk.x - b.x, uy = pk.y - b.y; const ul = Math.hypot(ux, uy); ux /= ul; uy /= ul;
+      const gx = b.x - ux * BR * 2, gy = b.y - uy * BR * 2;
+      if (gx < L + BR || gx > Rr - BR || gy < T + BR || gy > B - BR) continue;
+      let vx = gx - cue.x, vy = gy - cue.y; const d = Math.hypot(vx, vy);
+      if (d < 1) continue; vx /= d; vy /= d;
+      const dot = vx * ux + vy * uy;
+      if (dot < 0.3) continue;
+      let blocked = false;
+      for (const o of balls) {
+        if (!o.alive || o === cue || o === b) continue;
+        if (segDist(o.x, o.y, cue.x, cue.y, gx, gy) < BR * 1.9) { blocked = true; break; }
+        if (segDist(o.x, o.y, b.x, b.y, pk.x, pk.y) < BR * 1.9) { blocked = true; break; }
+      }
+      if (blocked) continue;
+      const score = d + (1 - dot) * 500 + ul * 0.6;
+      if (!best || score < best.score) best = { score, ang: Math.atan2(vy, vx), pw: Math.min(0.9, Math.max(0.35, 0.3 + (d + ul) / 1100)) };
+    }
+  }
+  if (!best) {
+    // sem tacada limpa: bate na bola legal mais próxima
+    let nb = null, nd = 1e9;
+    for (const b of targets) { const d = Math.hypot(b.x - cue.x, b.y - cue.y); if (d < nd) { nd = d; nb = b; } }
+    const a = nb ? Math.atan2(nb.y - cue.y, nb.x - cue.x) : -Math.PI / 2;
+    best = { ang: a, pw: 0.55 };
+  }
+  const ang = best.ang + (Math.random() - 0.5) * 0.035;
+  const pw = best.pw * (0.93 + Math.random() * 0.14);
+  animateAim(ang, pw);
+}
+function animateAim(ang, pw) {
+  const start = performance.now(), from = aimAngle;
+  let da = ang - from; while (da > Math.PI) da -= 2 * Math.PI; while (da < -Math.PI) da += 2 * Math.PI;
+  const dur = 700;
+  (function tick(now) {
+    if (state !== 'aim') return;
+    const k = Math.min(1, (now - start) / dur);
+    aimAngle = from + da * (k * (2 - k));
+    setPower(pw * Math.min(1, Math.max(0, (k - 0.4) / 0.6)));
+    if (k < 1) requestAnimationFrame(tick);
+    else setTimeout(() => { if (state === 'aim') { const p = power; setPower(0); fire(aimAngle, p); } }, 250);
+  })(start);
+}
+function freeSpot(x, y) {
+  if (x < L + BR || x > Rr - BR || y < T + BR || y > B - BR) return false;
+  return !balls.some(b => b !== cue && b.alive && Math.hypot(b.x - x, b.y - y) < BR * 2.1);
+}
+
+// ---------- Entrada ----------
+let dragging = null; // 'aim' | 'cue'
+function toLogical(e) {
+  const r = cv.getBoundingClientRect();
+  return { x: (e.clientX - r.left - view.ox) / view.s, y: (e.clientY - r.top - view.oy) / view.s };
+}
+cv.addEventListener('pointerdown', e => {
+  audio();
+  if (state !== 'aim' || isCpuTurn()) return;
+  cv.setPointerCapture(e.pointerId);
+  const p = toLogical(e);
+  if (ballInHand && Math.hypot(p.x - cue.x, p.y - cue.y) < 34) dragging = 'cue';
+  else { dragging = 'aim'; aim(p); }
+});
+cv.addEventListener('pointermove', e => {
+  if (!dragging) return;
+  const p = toLogical(e);
+  if (dragging === 'cue') { if (freeSpot(p.x, p.y)) { cue.x = p.x; cue.y = p.y; } else {
+    // desliza ao longo da posição válida mais próxima
+    const nx = Math.max(L + BR, Math.min(Rr - BR, p.x)), ny = Math.max(T + BR, Math.min(B - BR, p.y));
+    if (freeSpot(nx, ny)) { cue.x = nx; cue.y = ny; } } }
+  else aim(p);
+});
+const endDrag = () => { dragging = null; };
+cv.addEventListener('pointerup', endDrag); cv.addEventListener('pointercancel', endDrag);
+function aim(p) {
+  if (Math.hypot(p.x - cue.x, p.y - cue.y) < 6) return;
+  aimAngle = Math.atan2(p.y - cue.y, p.x - cue.x);
+}
+
+// barra de força
+let powDrag = false;
+function powFromEvent(e) {
+  const r = powerEl.getBoundingClientRect();
+  return Math.max(0, Math.min(1, (e.clientX - r.left) / r.width));
+}
+powerEl.addEventListener('pointerdown', e => {
+  audio();
+  if (state !== 'aim' || isCpuTurn()) return;
+  powerEl.setPointerCapture(e.pointerId); powDrag = true; setPower(powFromEvent(e));
+});
+powerEl.addEventListener('pointermove', e => { if (powDrag) setPower(powFromEvent(e)); });
+const powUp = () => {
+  if (!powDrag) return; powDrag = false;
+  if (power > 0.06 && state === 'aim' && !isCpuTurn()) { const p = power; setPower(0); fire(aimAngle, p); }
+  else setPower(0);
+};
+powerEl.addEventListener('pointerup', powUp); powerEl.addEventListener('pointercancel', () => { powDrag = false; setPower(0); });
+
+function setPower(v) {
+  power = v;
+  powerFill.style.width = (v * 100) + '%';
+  powerText.textContent = v > 0.02 ? Math.round(v * 100) + '%' : 'FORÇA';
+}
+
+// ---------- HUD ----------
+function toast(msg) {
+  toastEl.textContent = msg; toastEl.classList.add('show');
+  clearTimeout(toastTimer); toastTimer = setTimeout(() => toastEl.classList.remove('show'), 2600);
+}
+function updateHud() {
+  for (let p = 0; p < 2; p++) {
+    $('p' + p).classList.toggle('active', state !== 'menu' && state !== 'over' && turn === p);
+    const g = groups[p];
+    $('g' + p).textContent = g ? (g === 'solid' ? 'Lisas' : 'Riscadas') : 'Mesa aberta';
+    const box = $('d' + p); box.innerHTML = '';
+    if (!g) continue;
+    const list = balls.filter(b => b.n && groupOf(b.n) === g).sort((a, b) => a.n - b.n);
+    for (const b of list) {
+      const d = document.createElement('div');
+      d.className = 'dot' + (isStripe(b.n) ? ' stripe' : '');
+      d.style.background = isStripe(b.n) ? '#fff' : COLORS[b.n];
+      if (isStripe(b.n)) d.style.setProperty('--c', COLORS[b.n - 8]);
+      if (isStripe(b.n)) d.innerHTML = `<i style="position:absolute;left:0;right:0;top:3px;bottom:3px;background:${COLORS[b.n - 8]}"></i>`;
+      if (!b.alive) d.style.opacity = '.18';
+      box.appendChild(d);
+    }
+    if (ownCleared(p)) { const e = document.createElement('div'); e.className = 'dot'; e.style.background = COLORS[8]; box.appendChild(e); }
+  }
+}
+
+// ---------- Desenho ----------
+function resize() {
+  const r = cv.getBoundingClientRect(), dpr = window.devicePixelRatio || 1;
+  cv.width = Math.round(r.width * dpr); cv.height = Math.round(r.height * dpr);
+  const s = Math.min(r.width / W, r.height / H);
+  view = { s, ox: (r.width - W * s) / 2, oy: (r.height - H * s) / 2, dpr };
+}
+window.addEventListener('resize', resize);
+
+function drawBall(b, x, y, r, rot) {
+  const n = b.n, col = COLORS[n <= 8 ? n : n - 8];
+  ctx.save(); ctx.translate(x, y);
+  ctx.beginPath(); ctx.arc(0, 0, r, 0, 7); ctx.clip();
+  ctx.fillStyle = n === 0 ? '#f6f6f2' : (isStripe(n) ? '#f6f6f2' : col);
+  ctx.fillRect(-r, -r, 2 * r, 2 * r);
+  if (isStripe(n)) { ctx.fillStyle = col; ctx.fillRect(-r, -r * 0.55, 2 * r, r * 1.1); }
+  if (n > 0) {
+    ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(0, 0, r * 0.48, 0, 7); ctx.fill();
+    ctx.fillStyle = '#111'; ctx.font = `bold ${r * 0.7}px sans-serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText(n, 0, r * 0.05);
+  }
+  const g = ctx.createRadialGradient(-r * 0.35, -r * 0.4, r * 0.1, 0, 0, r * 1.05);
+  g.addColorStop(0, 'rgba(255,255,255,.55)'); g.addColorStop(0.35, 'rgba(255,255,255,0)'); g.addColorStop(1, 'rgba(0,0,0,.4)');
+  ctx.fillStyle = g; ctx.fillRect(-r, -r, 2 * r, 2 * r);
+  ctx.restore();
+}
+
+function drawTable() {
+  // madeira
+  const g = ctx.createLinearGradient(0, 0, W, H);
+  g.addColorStop(0, '#6b3d1c'); g.addColorStop(0.5, '#8a5428'); g.addColorStop(1, '#5a3216');
+  ctx.fillStyle = g; roundRect(0, 0, W, H, 22); ctx.fill();
+  // feltro
+  const f = ctx.createRadialGradient(W / 2, H / 2, 40, W / 2, H / 2, H * 0.6);
+  f.addColorStop(0, '#1f9a57'); f.addColorStop(1, '#126a3a');
+  ctx.fillStyle = f; ctx.fillRect(L - 6, T - 6, Rr - L + 12, B - T + 12);
+  // linhas
+  ctx.strokeStyle = 'rgba(255,255,255,.12)'; ctx.lineWidth = 1.5;
+  ctx.beginPath(); ctx.moveTo(L, 540 - 60); ctx.lineTo(Rr, 540 - 60); ctx.stroke();
+  ctx.fillStyle = 'rgba(255,255,255,.25)';
+  ctx.beginPath(); ctx.arc(W / 2, 250, 2.5, 0, 7); ctx.fill();
+  // diamantes
+  ctx.fillStyle = '#e8d9a8';
+  for (let i = 1; i < 8; i++) {
+    const y = T + (B - T) * i / 8;
+    if (i === 4) continue;
+    for (const x of [RAIL / 2, W - RAIL / 2]) { ctx.beginPath(); ctx.arc(x, y, 2.3, 0, 7); ctx.fill(); }
+  }
+  for (let i = 1; i < 4; i++) { const x = L + (Rr - L) * i / 4; for (const y of [RAIL / 2, H - RAIL / 2]) { ctx.beginPath(); ctx.arc(x, y, 2.3, 0, 7); ctx.fill(); } }
+  // tabelas (almofadas)
+  ctx.strokeStyle = '#0c5a30'; ctx.lineWidth = 6;
+  ctx.strokeRect(L - 3, T - 3, Rr - L + 6, B - T + 6);
+  // caçapas
+  for (const p of POCKETS) {
+    ctx.fillStyle = '#050505'; ctx.beginPath(); ctx.arc(p.x + (p.x === L ? -3 : 3) * (p.y === MIDY ? 1 : 0.4), p.y + (p.y === T ? -3 : p.y === B ? 3 : 0) * 0.4, p.vr, 0, 7); ctx.fill();
+  }
+}
+function roundRect(x, y, w, h, r) {
+  ctx.beginPath(); ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r);
+  ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath();
+}
+
+function drawAim() {
+  const p = predict(aimAngle);
+  const dx = Math.cos(aimAngle), dy = Math.sin(aimAngle);
+  ctx.save();
+  ctx.setLineDash([7, 6]); ctx.strokeStyle = 'rgba(255,255,255,.85)'; ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.moveTo(cue.x + dx * BR, cue.y + dy * BR); ctx.lineTo(p.gx, p.gy); ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.beginPath(); ctx.arc(p.gx, p.gy, BR, 0, 7); ctx.strokeStyle = 'rgba(255,255,255,.9)'; ctx.stroke();
+  if (p.hit) {
+    let nx = p.hit.x - p.gx, ny = p.hit.y - p.gy; const l = Math.hypot(nx, ny); nx /= l; ny /= l;
+    ctx.strokeStyle = 'rgba(255,230,120,.9)'; ctx.beginPath(); ctx.moveTo(p.hit.x, p.hit.y); ctx.lineTo(p.hit.x + nx * 70, p.hit.y + ny * 70); ctx.stroke();
+    // desvio da branca
+    const dot = dx * nx + dy * ny; let tx = dx - dot * nx, ty = dy - dot * ny; const tl = Math.hypot(tx, ty);
+    if (tl > 0.02) { tx /= tl; ty /= tl; ctx.strokeStyle = 'rgba(255,255,255,.5)'; ctx.beginPath(); ctx.moveTo(p.gx, p.gy); ctx.lineTo(p.gx + tx * 40, p.gy + ty * 40); ctx.stroke(); }
+  }
+  ctx.restore();
+  // taco
+  const pull = 14 + power * 70;
+  const sx = cue.x - dx * (BR + pull), sy = cue.y - dy * (BR + pull);
+  const ex = sx - dx * 250, ey = sy - dy * 250;
+  ctx.save(); ctx.lineCap = 'round';
+  ctx.strokeStyle = '#d9b27a'; ctx.lineWidth = 6; ctx.beginPath(); ctx.moveTo(sx, sy); ctx.lineTo(sx - dx * 170, sy - dy * 170); ctx.stroke();
+  ctx.strokeStyle = '#3a2412'; ctx.lineWidth = 8; ctx.beginPath(); ctx.moveTo(sx - dx * 170, sy - dy * 170); ctx.lineTo(ex, ey); ctx.stroke();
+  ctx.strokeStyle = '#5ac8ff'; ctx.lineWidth = 6; ctx.beginPath(); ctx.moveTo(sx, sy); ctx.lineTo(sx - dx * 5, sy - dy * 5); ctx.stroke();
+  ctx.restore();
+}
+
+let last = performance.now(), acc = 0, settleT = 0;
+function frame(now) {
+  const dt = Math.min(0.033, (now - last) / 1000); last = now;
+  if (state === 'moving') {
+    acc += dt;
+    while (acc >= SUB) { step(SUB); acc -= SUB; }
+    if (!anyMoving()) {
+      settleT += dt;
+      if (settleT > 0.35) { settleT = 0; acc = 0; const s = state; state = 'resolving'; resolveShot(); }
+    } else settleT = 0;
+  }
+  const dpr = view.dpr || 1;
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  ctx.clearRect(0, 0, cv.width, cv.height);
+  ctx.setTransform(dpr * view.s, 0, 0, dpr * view.s, dpr * view.ox, dpr * view.oy);
+  drawTable();
+  for (const b of balls) if (b.alive && b !== cue) drawBall(b, b.x, b.y, BR);
+  if (cue.alive) drawBall(cue, cue.x, cue.y, BR);
+  if (state === 'aim' && cue.alive) {
+    drawAim();
+    if (ballInHand && !isCpuTurn()) {
+      ctx.strokeStyle = 'rgba(255,255,255,.7)'; ctx.lineWidth = 1.5; ctx.setLineDash([3, 3]);
+      ctx.beginPath(); ctx.arc(cue.x, cue.y, BR + 7, 0, 7); ctx.stroke(); ctx.setLineDash([]);
+    }
+  }
+  requestAnimationFrame(frame);
+}
+
+// ---------- Menus ----------
+$('btnCpu').onclick = () => { audio(); newGame('cpu'); };
+$('btn2p').onclick = () => { audio(); newGame('2p'); };
+$('btnAgain').onclick = () => newGame(mode);
+$('btnMenu').onclick = () => { $('over').classList.remove('show'); $('menu').classList.add('show'); state = 'menu'; clearTimeout(cpuTimer); updateHud(); };
+$('menuBtn').onclick = () => { $('menu').classList.add('show'); state = 'menu'; clearTimeout(cpuTimer); updateHud(); };
+document.addEventListener('touchmove', e => e.preventDefault(), { passive: false });
+document.addEventListener('contextmenu', e => e.preventDefault());
+
+rack(); resize(); updateHud();
+requestAnimationFrame(frame);
+window.__pool = { get state() { return state; }, get balls() { return balls; }, fire, newGame, get turn() { return turn; } };
+})();
+</script>
+</body>
+</html>
