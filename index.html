@@ -37,6 +37,18 @@
   button { font:inherit; font-weight:700; font-size:18px; padding:14px 26px; border-radius:14px; border:0; background:var(--accent); color:#222; min-width:230px; cursor:pointer; }
   button.alt { background:#2c6a45; color:#fff; }
   #menuBtn { position:absolute; right:8px; bottom:8px; min-width:0; font-size:12px; padding:6px 12px; border-radius:10px; background:rgba(0,0,0,.45); color:#fff; }
+  .coins { position:fixed; top:calc(env(safe-area-inset-top) + 10px); right:14px; background:#0007; padding:6px 12px; border-radius:16px; font-weight:800; z-index:11; display:none; }
+  .overlay.show ~ .coins, body.menuopen .coins { display:block; }
+  .grid { display:flex; flex-direction:column; gap:10px; width:100%; max-width:360px; max-height:62vh; overflow:auto; }
+  .card { background:var(--panel); border-radius:14px; padding:10px 12px; display:flex; align-items:center; gap:12px; text-align:left; }
+  .card .t { flex:1; min-width:0; } .card .t b { display:block; font-size:15px; } .card .t small { color:var(--dim); font-size:12px; }
+  .card button { min-width:96px; font-size:14px; padding:9px 12px; }
+  .sw { width:34px; height:34px; border-radius:50%; border:2px solid #fff4; flex:none; }
+  .tabs { display:flex; gap:6px; } .tabs button { min-width:0; font-size:13px; padding:8px 12px; background:#2c6a45; color:#fff; } .tabs button.on { background:var(--accent); color:#222; }
+  #banner { height:50px; background:#fff; color:#555; font-size:11px; display:flex; align-items:center; justify-content:center; letter-spacing:1px; }
+  #banner.hide { display:none; }
+  #adov { z-index:30; background:#000; } #adov h2 { margin:0; } 
+  button.small { min-width:0; font-size:14px; padding:9px 16px; }
 </style>
 </head>
 <body>
@@ -50,6 +62,7 @@
     <div id="toast"></div>
     <button id="menuBtn" class="alt">Menu</button>
   </div>
+  <div id="banner">ANÚNCIO BANNER</div>
   <div id="powerWrap">
     <div id="powerLabel"><span>Arrasta na mesa para apontar</span><span>Arrasta aqui e larga para bater</span></div>
     <div id="power" class="disabled"><div id="powerFill"></div><div id="powerText">FORÇA</div></div>
@@ -58,17 +71,29 @@
 
 <div class="overlay show" id="menu">
   <h1>🎱 8 Ball Pool</h1>
-  <p>Mete as tuas bolas (lisas ou riscadas) e depois a bola 8. Toca na mesa para apontar e puxa a barra de força para tacar.</p>
-  <button id="btnCpu">Jogar contra CPU</button>
-  <button id="btn2p" class="alt">2 Jogadores</button>
+  <p id="lvlInfo"></p>
+  <button id="btnCpu">Jogar a dinheiro</button>
+  <button id="btn2p" class="alt">2 Jogadores (amigo)</button>
+  <button id="btnShop" class="alt">🛒 Loja</button>
+  <button id="btnDaily" class="alt">🎁 Prémio diário</button>
+  <button id="btnVideo" class="alt">▶ Vídeo: +150 moedas</button>
+</div>
+<div class="overlay" id="rooms"><h1>Escolhe a sala</h1><div class="grid" id="roomList"></div><button class="alt small" data-close="rooms">Voltar</button></div>
+<div class="overlay" id="shop">
+  <h1>Loja</h1>
+  <div class="tabs" id="shopTabs"><button data-t="cues" class="on">Tacos</button><button data-t="cloth">Panos</button><button data-t="coins">Moedas</button></div>
+  <div class="grid" id="shopList"></div>
+  <button class="alt small" data-close="shop">Voltar</button>
 </div>
 <div class="overlay" id="over">
   <h1 id="overTitle"></h1>
   <p id="overMsg"></p>
+  <button id="btnDouble">▶ Dobrar prémio (vídeo)</button>
   <button id="btnAgain">Jogar outra vez</button>
   <button id="btnMenu" class="alt">Menu</button>
 </div>
-
+<div class="overlay" id="adov"><h2>Anúncio (simulado)</h2><p id="adTxt"></p><button id="adClose" class="alt small" disabled>Fechar</button></div>
+<div class="coins" id="coins">🪙 0</div>
 <script>
 (() => {
 'use strict';
@@ -93,9 +118,131 @@ const $ = id => document.getElementById(id);
 const powerEl = $('power'), powerFill = $('powerFill'), powerText = $('powerText');
 const toastEl = $('toast');
 
+
+// ---------- Economia / dados guardados ----------
+const CUES = [
+  { name:'Taco Clássico', color:'#d9b27a', price:0,    power:1.00 },
+  { name:'Taco Azul',     color:'#4aa3ff', price:600,  power:1.06 },
+  { name:'Taco Dragão',   color:'#e5483b', price:2500, power:1.12 },
+  { name:'Taco Dourado',  color:'#ffd54a', price:8000, power:1.20 },
+];
+const CLOTHS = [
+  { name:'Verde Clássico', c1:'#1f9a57', c2:'#126a3a', price:0 },
+  { name:'Azul Oceano',    c1:'#2a7fd0', c2:'#14487f', price:400 },
+  { name:'Vermelho Casino',c1:'#c23a3a', c2:'#7a1c1c', price:900 },
+  { name:'Roxo Neon',      c1:'#8a4fd6', c2:'#47208a', price:1500 },
+];
+const ROOMS = [
+  { name:'Bairro', fee:50,   prize:100,   noise:0.075 },
+  { name:'Clube',  fee:250,  prize:500,   noise:0.04 },
+  { name:'Profissional', fee:1000, prize:2000, noise:0.015 },
+  { name:'Mestre', fee:5000, prize:10000, noise:0.005 },
+];
+const COIN_PACKS = [
+  { id:'coins_1000',  coins:1000,  price:'0,99 €' },
+  { id:'coins_6000',  coins:6000,  price:'4,99 €' },
+  { id:'coins_15000', coins:15000, price:'9,99 €' },
+];
+const NOADS_ID = 'remove_ads';
+const SAVE_KEY = 'pool8_save_v1';
+let save = { coins:500, wins:0, losses:0, cues:[0], cue:0, cloths:[0], cloth:0, noAds:false, lastDaily:'', streak:0, matches:0 };
+try { Object.assign(save, JSON.parse(localStorage.getItem(SAVE_KEY) || '{}')); } catch (e) {}
+const persist = () => { try { localStorage.setItem(SAVE_KEY, JSON.stringify(save)); } catch (e) {} refreshCoins(); };
+const curCue = () => CUES[save.cue], curCloth = () => CLOTHS[save.cloth];
+
+// ---------- Monetização (anúncios + compras) ----------
+// Na web usa simulação. Dentro da app (Capacitor) usa AdMob e compras nativas.
+// IDs abaixo são os de TESTE da Google — trocar pelos teus antes de publicar (ver MONETIZACAO.md).
+const Monet = {
+  native: !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform()),
+  ids: { interstitial:'ca-app-pub-3940256099942544/4411468910', rewarded:'ca-app-pub-3940256099942544/1712485313', banner:'ca-app-pub-3940256099942544/2934735716' },
+  fake(label, secs) {
+    return new Promise(res => {
+      const ov = $('adov'), btn = $('adClose'); let t = secs;
+      ov.classList.add('show'); btn.disabled = true;
+      const tick = () => { $('adTxt').textContent = label + (t > 0 ? ' — ' + t + 's' : ''); if (t-- > 0) setTimeout(tick, 1000); else { btn.disabled = false; } };
+      tick(); btn.onclick = () => { ov.classList.remove('show'); res(true); };
+    });
+  },
+  async init() {
+    if (!this.native) return;
+    try { const A = window.Capacitor.Plugins.AdMob; await A.initialize({ initializeForTesting:true }); if (!save.noAds) A.showBanner({ adId:this.ids.banner, position:'BOTTOM_CENTER', margin:0 }); } catch (e) {}
+    try { window.CdvPurchase.store.register([{ id:NOADS_ID, type:CdvPurchase.ProductType.NON_CONSUMABLE, platform:CdvPurchase.Platform.APPLE_APPSTORE }, ...COIN_PACKS.map(p => ({ id:p.id, type:CdvPurchase.ProductType.CONSUMABLE, platform:CdvPurchase.Platform.APPLE_APPSTORE }))]); await CdvPurchase.store.initialize(); } catch (e) {}
+  },
+  async interstitial() {
+    if (save.noAds) return;
+    if (!this.native) return this.fake('Anúncio intersticial', 3);
+    try { const A = window.Capacitor.Plugins.AdMob; await A.prepareInterstitial({ adId:this.ids.interstitial }); await A.showInterstitial(); } catch (e) {}
+  },
+  async rewarded() { // devolve true se o utilizador viu o vídeo até ao fim
+    if (!this.native) return this.fake('Vídeo com recompensa', 5);
+    try { const A = window.Capacitor.Plugins.AdMob; await A.prepareRewardVideoAd({ adId:this.ids.rewarded }); const r = await A.showRewardVideoAd(); return !!r; } catch (e) { return false; }
+  },
+  async buy(id) { // devolve true se a compra foi concluída
+    if (!this.native) return confirm('[Simulação] Confirmar compra de ' + id + '?');
+    try {
+      const st = window.CdvPurchase.store, offer = st.get(id).getOffer();
+      const err = await offer.order(); return !err;
+    } catch (e) { return false; }
+  },
+  async restore() {
+    if (!this.native) return toast('Compras restauradas (simulação).');
+    try { await window.CdvPurchase.store.restorePurchases(); toast('Compras restauradas.'); } catch (e) { toast('Não foi possível restaurar.'); }
+  },
+};
+function hideBannerIfPaid() { $('banner').classList.toggle('hide', save.noAds); if (save.noAds && Monet.native) try { window.Capacitor.Plugins.AdMob.removeBanner(); } catch (e) {} }
+
+function refreshCoins() { $('coins').textContent = '🪙 ' + save.coins; $('lvlInfo').textContent = `Vitórias: ${save.wins} · Derrotas: ${save.losses}`; }
+const open = id => { document.querySelectorAll('.overlay').forEach(o => { if (o.id !== 'adov') o.classList.remove('show'); }); $(id).classList.add('show'); refreshCoins(); };
+document.querySelectorAll('[data-close]').forEach(b => b.onclick = () => open('menu'));
+
+function renderRooms() {
+  const box = $('roomList'); box.innerHTML = '';
+  ROOMS.forEach(r => {
+    const d = document.createElement('div'); d.className = 'card';
+    d.innerHTML = `<div class="t"><b>${r.name}</b><small>Entrada 🪙${r.fee} · Prémio 🪙${r.prize}</small></div><button>Jogar</button>`;
+    d.querySelector('button').onclick = async () => {
+      if (save.coins < r.fee) { if (confirm('Sem moedas. Ver um vídeo para ganhar 150 moedas?')) await watchForCoins(); return; }
+      newGame('cpu', r);
+    };
+    box.appendChild(d);
+  });
+}
+let shopTab = 'cues';
+function renderShop() {
+  const box = $('shopList'); box.innerHTML = '';
+  document.querySelectorAll('#shopTabs button').forEach(b => b.classList.toggle('on', b.dataset.t === shopTab));
+  const card = (sw, title, sub, label, fn, dis) => { const d = document.createElement('div'); d.className = 'card'; d.innerHTML = `${sw ? `<div class="sw" style="background:${sw}"></div>` : ''}<div class="t"><b>${title}</b><small>${sub}</small></div><button ${dis ? 'disabled' : ''}>${label}</button>`; d.querySelector('button').onclick = fn; box.appendChild(d); };
+  if (shopTab === 'cues') CUES.forEach((c, i) => {
+    const own = save.cues.includes(i);
+    card(c.color, c.name, `Força +${Math.round((c.power - 1) * 100)}%`, own ? (save.cue === i ? 'Em uso' : 'Usar') : '🪙' + c.price,
+      () => { if (own) save.cue = i; else if (save.coins >= c.price) { save.coins -= c.price; save.cues.push(i); save.cue = i; } else return toast('Moedas insuficientes'); persist(); renderShop(); }, own && save.cue === i);
+  });
+  if (shopTab === 'cloth') CLOTHS.forEach((c, i) => {
+    const own = save.cloths.includes(i);
+    card(c.c1, c.name, 'Pano da mesa', own ? (save.cloth === i ? 'Em uso' : 'Usar') : '🪙' + c.price,
+      () => { if (own) save.cloth = i; else if (save.coins >= c.price) { save.coins -= c.price; save.cloths.push(i); save.cloth = i; } else return toast('Moedas insuficientes'); persist(); renderShop(); }, own && save.cloth === i);
+  });
+  if (shopTab === 'coins') {
+    COIN_PACKS.forEach(p => card('#ffd54a', `🪙 ${p.coins}`, 'Pacote de moedas', p.price, async () => { if (await Monet.buy(p.id)) { save.coins += p.coins; persist(); toast('Compra concluída!'); } }));
+    card('#fff', 'Remover anúncios', 'Sem banners nem intersticiais', save.noAds ? 'Comprado' : '2,99 €', async () => { if (await Monet.buy(NOADS_ID)) { save.noAds = true; persist(); hideBannerIfPaid(); renderShop(); } }, save.noAds);
+    card(null, 'Restaurar compras', 'Obrigatório pela Apple', 'Restaurar', () => Monet.restore());
+  }
+}
+document.querySelectorAll('#shopTabs button').forEach(b => b.onclick = () => { shopTab = b.dataset.t; renderShop(); });
+async function watchForCoins() { if (await Monet.rewarded()) { save.coins += 150; persist(); toast('+150 moedas!'); } }
+function claimDaily() {
+  const today = new Date().toISOString().slice(0, 10);
+  if (save.lastDaily === today) return toast('Já recebeste o prémio de hoje. Volta amanhã!');
+  const y = new Date(Date.now() - 864e5).toISOString().slice(0, 10);
+  save.streak = save.lastDaily === y ? Math.min(7, save.streak + 1) : 1;
+  const amt = 100 * save.streak; save.coins += amt; save.lastDaily = today; persist();
+  toast(`Dia ${save.streak}: +${amt} moedas`);
+}
+
 // ---------- Estado ----------
 let balls = [], cue = null;
-let mode = 'cpu';           // 'cpu' | '2p'
+let mode = 'cpu', room = ROOMS[0];           // 'cpu' | '2p'
 let state = 'menu';         // menu | aim | moving | over
 let turn = 0;               // 0 ou 1
 let groups = [null, null];  // 'solid' | 'stripe'
@@ -162,14 +309,15 @@ function rack() {
 }
 
 // ---------- Início de jogo ----------
-function newGame(m) {
+function newGame(m, rm) {
   mode = m;
+  if (m === 'cpu') { room = rm || room; save.coins -= room.fee; persist(); }
   rack();
   turn = 0; groups = [null, null]; ballInHand = false; firstBreak = true;
   aimAngle = -Math.PI / 2; power = 0; shot = null;
   $('n0').textContent = m === 'cpu' ? 'Tu' : 'Jogador 1';
   $('n1').textContent = m === 'cpu' ? 'CPU' : 'Jogador 2';
-  $('menu').classList.remove('show'); $('over').classList.remove('show');
+  document.querySelectorAll('.overlay').forEach(o => o.classList.remove('show'));
   clearTimeout(cpuTimer);
   state = 'aim';
   updateHud();
@@ -247,11 +395,19 @@ function resolveShot() {
 let legalTargetsBefore = [], clearedBefore = false, groupsBefore0 = false;
 const pName = p => $('n' + p).textContent;
 
+let lastPrize = 0;
 function endGame(winner, why) {
   state = 'over'; clearTimeout(cpuTimer);
   updateHud();
   $('overTitle').textContent = mode === 'cpu' ? (winner === 0 ? '🏆 Ganhaste!' : '😢 Perdeste') : `🏆 ${pName(winner)} ganha!`;
-  $('overMsg').textContent = why;
+  let prize = 0;
+  if (mode === 'cpu') {
+    if (winner === 0) { prize = room.prize; save.coins += prize; save.wins++; } else save.losses++;
+    save.matches++; persist();
+  }
+  lastPrize = prize;
+  $('btnDouble').style.display = prize ? '' : 'none';
+  $('overMsg').textContent = why + (prize ? ` Ganhaste 🪙${prize}.` : '');
   setTimeout(() => $('over').classList.add('show'), 700);
 }
 
@@ -265,8 +421,9 @@ function fire(angle, pw) {
   // animação do taco: curta
   state = 'moving';
   powerEl.classList.add('disabled');
-  cue.vx = Math.cos(angle) * MAX_SPEED * pw;
-  cue.vy = Math.sin(angle) * MAX_SPEED * pw;
+  const pm = isCpuTurn() ? 1 : curCue().power;
+  cue.vx = Math.cos(angle) * MAX_SPEED * pw * pm;
+  cue.vy = Math.sin(angle) * MAX_SPEED * pw * pm;
   ballInHand = false;
   firstBreak = false;
   blip(300, pw * 0.7, 0.08, 'square');
@@ -395,7 +552,7 @@ function cpuPlay() {
     const a = nb ? Math.atan2(nb.y - cue.y, nb.x - cue.x) : -Math.PI / 2;
     best = { ang: a, pw: 0.55 };
   }
-  const ang = best.ang + (Math.random() - 0.5) * 0.035;
+  const ang = best.ang + (Math.random() - 0.5) * room.noise * 2;
   const pw = best.pw * (0.93 + Math.random() * 0.14);
   animateAim(ang, pw);
 }
@@ -532,7 +689,7 @@ function drawTable() {
   ctx.fillStyle = g; roundRect(0, 0, W, H, 22); ctx.fill();
   // feltro
   const f = ctx.createRadialGradient(W / 2, H / 2, 40, W / 2, H / 2, H * 0.6);
-  f.addColorStop(0, '#1f9a57'); f.addColorStop(1, '#126a3a');
+  f.addColorStop(0, curCloth().c1); f.addColorStop(1, curCloth().c2);
   ctx.fillStyle = f; ctx.fillRect(L - 6, T - 6, Rr - L + 12, B - T + 12);
   // linhas
   ctx.strokeStyle = 'rgba(255,255,255,.12)'; ctx.lineWidth = 1.5;
@@ -581,7 +738,7 @@ function drawAim() {
   const sx = cue.x - dx * (BR + pull), sy = cue.y - dy * (BR + pull);
   const ex = sx - dx * 250, ey = sy - dy * 250;
   ctx.save(); ctx.lineCap = 'round';
-  ctx.strokeStyle = '#d9b27a'; ctx.lineWidth = 6; ctx.beginPath(); ctx.moveTo(sx, sy); ctx.lineTo(sx - dx * 170, sy - dy * 170); ctx.stroke();
+  ctx.strokeStyle = curCue().color; ctx.lineWidth = 6; ctx.beginPath(); ctx.moveTo(sx, sy); ctx.lineTo(sx - dx * 170, sy - dy * 170); ctx.stroke();
   ctx.strokeStyle = '#3a2412'; ctx.lineWidth = 8; ctx.beginPath(); ctx.moveTo(sx - dx * 170, sy - dy * 170); ctx.lineTo(ex, ey); ctx.stroke();
   ctx.strokeStyle = '#5ac8ff'; ctx.lineWidth = 6; ctx.beginPath(); ctx.moveTo(sx, sy); ctx.lineTo(sx - dx * 5, sy - dy * 5); ctx.stroke();
   ctx.restore();
@@ -616,15 +773,21 @@ function frame(now) {
 }
 
 // ---------- Menus ----------
-$('btnCpu').onclick = () => { audio(); newGame('cpu'); };
+$('btnCpu').onclick = () => { audio(); renderRooms(); open('rooms'); };
 $('btn2p').onclick = () => { audio(); newGame('2p'); };
-$('btnAgain').onclick = () => newGame(mode);
-$('btnMenu').onclick = () => { $('over').classList.remove('show'); $('menu').classList.add('show'); state = 'menu'; clearTimeout(cpuTimer); updateHud(); };
-$('menuBtn').onclick = () => { $('menu').classList.add('show'); state = 'menu'; clearTimeout(cpuTimer); updateHud(); };
+$('btnShop').onclick = () => { renderShop(); open('shop'); };
+$('btnDaily').onclick = claimDaily;
+$('btnVideo').onclick = watchForCoins;
+$('btnDouble').onclick = async () => { if (lastPrize && await Monet.rewarded()) { save.coins += lastPrize; persist(); $('btnDouble').style.display = 'none'; toast(`Prémio dobrado! +${lastPrize}`); lastPrize = 0; } };
+// intersticial a cada 3 partidas contra o CPU
+const afterMatch = async fn => { if (mode === 'cpu' && save.matches % 3 === 0) await Monet.interstitial(); fn(); };
+$('btnAgain').onclick = () => afterMatch(() => { if (mode === 'cpu') { renderRooms(); open('rooms'); } else newGame(mode); });
+$('btnMenu').onclick = () => afterMatch(() => { open('menu'); state = 'menu'; clearTimeout(cpuTimer); updateHud(); });
+$('menuBtn').onclick = () => { open('menu'); state = 'menu'; clearTimeout(cpuTimer); updateHud(); };
 document.addEventListener('touchmove', e => e.preventDefault(), { passive: false });
 document.addEventListener('contextmenu', e => e.preventDefault());
 
-rack(); resize(); updateHud();
+rack(); resize(); updateHud(); refreshCoins(); hideBannerIfPaid(); Monet.init();
 requestAnimationFrame(frame);
 window.__pool = { get state() { return state; }, get balls() { return balls; }, fire, newGame, get turn() { return turn; } };
 })();
