@@ -190,7 +190,7 @@ const Monet = {
     try { await window.CdvPurchase.store.restorePurchases(); toast('Compras restauradas.'); } catch (e) { toast('Não foi possível restaurar.'); }
   },
 };
-function hideBannerIfPaid() { $('banner').classList.toggle('hide', save.noAds); if (save.noAds && Monet.native) try { window.Capacitor.Plugins.AdMob.removeBanner(); } catch (e) {} }
+function hideBannerIfPaid() { $('banner').classList.toggle('hide', save.noAds); resize(); if (save.noAds && Monet.native) try { window.Capacitor.Plugins.AdMob.removeBanner(); } catch (e) {} }
 
 function refreshCoins() { $('coins').textContent = '🪙 ' + save.coins; $('lvlInfo').textContent = `Vitórias: ${save.wins} · Derrotas: ${save.losses}`; }
 const open = id => { document.querySelectorAll('.overlay').forEach(o => { if (o.id !== 'adov') o.classList.remove('show'); }); $(id).classList.add('show'); refreshCoins(); };
@@ -379,7 +379,7 @@ function resolveShot() {
 
   updateHud();
   if (foul) {
-    if (scratch) { cue.alive = true; cue.x = W / 2; cue.y = 540; cue.vx = cue.vy = 0; }
+    if (scratch) { const sp = nearestFree(W / 2, 540); cue.alive = true; cue.x = sp.x; cue.y = sp.y; cue.vx = cue.vy = 0; }
     ballInHand = true;
     turn = opp;
     startTurn(foulWhy + ` ${pName(turn)} tem bola na mão.`);
@@ -569,8 +569,17 @@ function animateAim(ang, pw) {
     else setTimeout(() => { if (state === 'aim') { const p = power; setPower(0); fire(aimAngle, p); } }, 250);
   })(start);
 }
+function nearestFree(x, y) {
+  if (freeSpot(x, y)) return { x, y };
+  for (let r = 6; r < 400; r += 6) for (let a = 0; a < 6.28; a += 0.4) {
+    const px = x + Math.cos(a) * r, py = y + Math.sin(a) * r;
+    if (freeSpot(px, py)) return { x: px, y: py };
+  }
+  return { x, y };
+}
 function freeSpot(x, y) {
   if (x < L + BR || x > Rr - BR || y < T + BR || y > B - BR) return false;
+  if (POCKETS.some(pk => Math.hypot(x - pk.x, y - pk.y) < pk.r + BR)) return false;
   return !balls.some(b => b !== cue && b.alive && Math.hypot(b.x - x, b.y - y) < BR * 2.1);
 }
 
@@ -605,7 +614,7 @@ function aim(p) {
 }
 
 // barra de força
-let powDrag = false;
+let powDrag = false, powArmed = false, powX0 = 0;
 function powFromEvent(e) {
   const r = powerEl.getBoundingClientRect();
   return Math.max(0, Math.min(1, (e.clientX - r.left) / r.width));
@@ -613,15 +622,15 @@ function powFromEvent(e) {
 powerEl.addEventListener('pointerdown', e => {
   audio();
   if (state !== 'aim' || isCpuTurn()) return;
-  powerEl.setPointerCapture(e.pointerId); powDrag = true; setPower(powFromEvent(e));
+  powerEl.setPointerCapture(e.pointerId); powDrag = true; powArmed = false; powX0 = e.clientX; setPower(0);
 });
-powerEl.addEventListener('pointermove', e => { if (powDrag) setPower(powFromEvent(e)); });
+powerEl.addEventListener('pointermove', e => { if (!powDrag) return; if (!powArmed && Math.abs(e.clientX - powX0) > 12) powArmed = true; if (powArmed) setPower(powFromEvent(e)); });
 const powUp = () => {
   if (!powDrag) return; powDrag = false;
-  if (power > 0.06 && state === 'aim' && !isCpuTurn()) { const p = power; setPower(0); fire(aimAngle, p); }
+  if (powArmed && power > 0.06 && state === 'aim' && !isCpuTurn()) { const p = power; setPower(0); fire(aimAngle, p); }
   else setPower(0);
 };
-powerEl.addEventListener('pointerup', powUp); powerEl.addEventListener('pointercancel', () => { powDrag = false; setPower(0); });
+powerEl.addEventListener('pointerup', powUp); powerEl.addEventListener('pointercancel', () => { powDrag = false; powArmed = false; setPower(0); });
 
 function setPower(v) {
   power = v;
@@ -663,6 +672,7 @@ function resize() {
   view = { s, ox: (r.width - W * s) / 2, oy: (r.height - H * s) / 2, dpr };
 }
 window.addEventListener('resize', resize);
+if (window.ResizeObserver) new ResizeObserver(resize).observe($('stage'));
 
 function drawBall(b, x, y, r, rot) {
   const n = b.n, col = COLORS[n <= 8 ? n : n - 8];
@@ -784,7 +794,7 @@ const afterMatch = async fn => { if (mode === 'cpu' && save.matches % 3 === 0) a
 $('btnAgain').onclick = () => afterMatch(() => { if (mode === 'cpu') { renderRooms(); open('rooms'); } else newGame(mode); });
 $('btnMenu').onclick = () => afterMatch(() => { open('menu'); state = 'menu'; clearTimeout(cpuTimer); updateHud(); });
 $('menuBtn').onclick = () => { open('menu'); state = 'menu'; clearTimeout(cpuTimer); updateHud(); };
-document.addEventListener('touchmove', e => e.preventDefault(), { passive: false });
+document.addEventListener('touchmove', e => { if (!e.target.closest('.grid')) e.preventDefault(); }, { passive: false });
 document.addEventListener('contextmenu', e => e.preventDefault());
 
 rack(); resize(); updateHud(); refreshCoins(); hideBannerIfPaid(); Monet.init();
