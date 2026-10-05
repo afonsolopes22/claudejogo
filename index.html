@@ -64,7 +64,7 @@
   #banner { height:50px; background:#fff; color:#555; font-size:11px; display:flex; align-items:center; justify-content:center; letter-spacing:1px; }
   #banner.hide { display:none; }
   #adov { z-index:30; background:#000; } #adov h2 { margin:0; }
-  button.small { min-width:0; font-size:14px; padding:9px 16px; }
+  button.small { min-width:0; min-height:44px; font-size:14px; padding:9px 16px; }
   .xp { height:10px; border-radius:6px; background:#06140c; overflow:hidden; margin:6px 0; } .xp i { display:block; height:100%; background:linear-gradient(90deg,#43d17a,#ffd54a); }
   #profInfo { width:100%; max-width:360px; flex:none; display:block; }
   #profInfo b { font-size:17px; }
@@ -108,6 +108,20 @@
   @keyframes hlpulse { 0%,100% { box-shadow:0 0 0 0 #ffd54aaa; } 50% { box-shadow:0 0 0 7px #ffd54a00; } }
   #stage.hl::after { content:""; position:absolute; inset:2px; border:3px solid var(--accent); border-radius:16px; pointer-events:none; animation:hlfade 1s ease-in-out infinite; }
   @keyframes hlfade { 50% { opacity:.25; } }
+  /* fase 3 */
+  .mgrid { display:grid; grid-template-columns:1fr 1fr; gap:8px; width:100%; max-width:300px; }
+  .mgrid button { min-width:0; min-height:44px; font-size:14px; padding:10px 6px; }
+  .dgrid { display:grid; grid-template-columns:repeat(4,1fr); gap:8px; width:100%; max-width:340px; }
+  .dcell { background:var(--panel); border-radius:12px; padding:8px 4px; display:flex; flex-direction:column; align-items:center; gap:2px; position:relative; border:2px solid transparent; }
+  .dcell small { color:var(--dim); font-size:11px; } .dcell b { font-size:15px; }
+  .dcell.today { border-color:var(--accent); animation:hlpulse 1s ease-in-out infinite; } .dcell.done { opacity:.55; }
+  .dcell.big { grid-column:span 2; background:#3a3410; } .dcell i { position:absolute; top:2px; right:6px; font-style:normal; color:#43d17a; }
+  .cgrid { display:grid; grid-template-columns:repeat(5,1fr); gap:8px; width:100%; max-width:340px; max-height:56vh; overflow:auto; flex:none; }
+  .lv { min-width:0; padding:8px 0; font-size:16px; border-radius:12px; background:var(--panel); color:#fff; display:flex; flex-direction:column; align-items:center; gap:2px; }
+  .lv small { font-size:10px; color:var(--accent); letter-spacing:1px; }
+  #achToast { position:fixed; left:50%; top:calc(env(safe-area-inset-top) + 10px); transform:translate(-50%,-160%); transition:transform .35s cubic-bezier(.2,1.2,.4,1); z-index:35; background:linear-gradient(90deg,#c9971c,#ffd54a); color:#222; font-weight:800; padding:10px 16px; border-radius:14px; box-shadow:0 6px 20px #0007; max-width:92%; text-align:center; pointer-events:none; }
+  #achToast.show { transform:translate(-50%,0); }
+  .card > span { color:var(--accent); font-weight:700; font-size:13px; }
 </style>
 </head>
 <body>
@@ -136,20 +150,29 @@
   <h1>🎱 8 Ball Pool</h1>
   <p id="lvlInfo"></p>
   <button id="btnCpu">Jogar a dinheiro</button>
-  <button id="btn2p" class="alt">2 Jogadores (amigo)</button>
-  <button id="btnProf" class="alt">📋 Missões e perfil</button>
-  <button id="btnTut" class="alt">❓ Como jogar</button>
-  <button id="btnShop" class="alt">🛒 Loja</button>
-  <button id="btnDaily" class="alt">🎁 Prémio diário</button>
-  <button id="btnVideo" class="alt">▶ Vídeo: +150 moedas</button>
+  <button id="btnChal" class="alt">🎯 Desafios</button>
+  <button id="btnTour" class="alt">🏆 Torneio</button>
+  <div class="mgrid">
+    <button id="btn2p" class="alt">👥 2 Jogadores</button>
+    <button id="btnProf" class="alt">📋 Missões</button>
+    <button id="btnShop" class="alt">🛒 Loja</button>
+    <button id="btnDaily" class="alt">🎁 Diário</button>
+    <button id="btnVideo" class="alt">▶ +150 🪙</button>
+    <button id="btnTut" class="alt">❓ Como jogar</button>
+  </div>
 </div>
 <div class="overlay" id="rooms"><h1>Escolhe a sala</h1><div class="grid" id="roomList"></div><button class="alt small" data-close="rooms">Voltar</button></div>
 <div class="overlay" id="prof">
   <h1>Perfil</h1>
   <div class="card" id="profInfo"></div>
   <div class="grid" id="missionList"></div>
+  <button id="btnAch" class="small">🏆 Conquistas</button>
   <button class="alt small" data-close="prof">Voltar</button>
 </div>
+<div class="overlay" id="daily"><h1>Prémio diário</h1><p id="dailyMsg"></p><div class="dgrid" id="dailyGrid"></div><button id="btnClaim">Receber</button><button class="alt small" data-close="daily">Voltar</button></div>
+<div class="overlay" id="ach"><h1>Conquistas</h1><p id="achSum"></p><div class="grid" id="achList"></div><button class="alt small" id="achBack">Voltar</button></div>
+<div class="overlay" id="chal"><h1>Desafios</h1><p id="chalSum"></p><div class="cgrid" id="chalGrid"></div><button class="alt small" data-close="chal">Voltar</button></div>
+<div class="overlay" id="tour"><h1>Torneio</h1><p id="tourMsg"></p><div class="grid" id="tourList"></div><button id="btnTourGo">Entrar</button><button class="alt small" data-close="tour">Voltar</button></div>
 <div class="overlay" id="shop">
   <h1>Loja</h1>
   <div class="tabs" id="shopTabs"><button data-t="cues" class="on">Tacos</button><button data-t="cloth">Panos</button><button data-t="coins">Moedas</button></div>
@@ -172,6 +195,7 @@
 </div>
 <div class="overlay" id="adov"><h2>Anúncio (simulado)</h2><p id="adTxt"></p><button id="adClose" class="alt small" disabled>Fechar</button></div>
 <div class="coins" id="coins">🪙 0</div>
+<div id="achToast"></div>
 <canvas id="fx"></canvas>
 <div id="splash"><div id="lgBall"><b>8</b></div><div id="lgTitle"></div><div id="lgSub">SINUCA DE BOLSO</div></div>
 <script>
@@ -204,12 +228,12 @@ const spinEl = $('spin'), spinDot = $('spinDot'), nudgeEl = $('nudge');
 
 // ---------- Economia / dados guardados ----------
 const CUES = [
-  { name:'Taco Clássico', color:'#d9b27a', price:0,     power:1.00, spin:1.0 },
-  { name:'Taco Azul',     color:'#4aa3ff', price:600,   power:1.06, spin:1.1 },
-  { name:'Taco Neon',     color:'#3df0b0', price:1500,  power:1.09, spin:1.25 },
-  { name:'Taco Dragão',   color:'#e5483b', price:2500,  power:1.12, spin:1.3 },
-  { name:'Taco Dourado',  color:'#ffd54a', price:8000,  power:1.20, spin:1.4 },
-  { name:'Taco Lendário', color:'#c78bff', price:15000, power:1.20, spin:1.6 },
+  { name:'Taco Clássico', color:'#d9b27a', price:0,     power:1.00, spin:1.0, lvl:1 },
+  { name:'Taco Azul',     color:'#4aa3ff', price:600,   power:1.06, spin:1.1, lvl:2 },
+  { name:'Taco Neon',     color:'#3df0b0', price:1500,  power:1.09, spin:1.25, lvl:4 },
+  { name:'Taco Dragão',   color:'#e5483b', price:2500,  power:1.12, spin:1.3, lvl:6 },
+  { name:'Taco Dourado',  color:'#ffd54a', price:8000,  power:1.20, spin:1.4, lvl:9 },
+  { name:'Taco Lendário', color:'#c78bff', price:15000, power:1.20, spin:1.6, lvl:12 },
 ];
 // fr = multiplicador de atrito (menor = bolas rolam mais)
 const CLOTHS = [
@@ -222,10 +246,10 @@ const CLOTHS = [
 ];
 // ai: 0 = heurística simples, 1..3 = simula tacadas candidatas (mais candidatas = mais forte)
 const ROOMS = [
-  { name:'Bairro', fee:50,   prize:100,   noise:0.075, ai:0, aim:1200 },
-  { name:'Clube',  fee:250,  prize:500,   noise:0.04,  ai:1, aim:600 },
-  { name:'Profissional', fee:1000, prize:2000, noise:0.015, ai:2, aim:380 },
-  { name:'Mestre', fee:5000, prize:10000, noise:0.005, ai:3, aim:240 },
+  { name:'Bairro', fee:50,   prize:100,   noise:0.075, ai:0, aim:1200, lvl:1 },
+  { name:'Clube',  fee:250,  prize:500,   noise:0.04,  ai:1, aim:600, lvl:3 },
+  { name:'Profissional', fee:1000, prize:2000, noise:0.015, ai:2, aim:380, lvl:6 },
+  { name:'Mestre', fee:5000, prize:10000, noise:0.005, ai:3, aim:240, lvl:10 },
 ];
 const COIN_PACKS = [
   { id:'coins_1000',  coins:1000,  price:'0,99 €' },
@@ -237,15 +261,61 @@ const MISSIONS = [
   { id:'win',  key:'win',  txt:'Ganha 2 partidas', goal:2,  reward:250 },
   { id:'pot',  key:'pot',  txt:'Mete 15 bolas',    goal:15, reward:200 },
 ];
+const DAILY = [100, 150, 200, 300, 400, 500, 1500];   // calendário de 7 dias; o 7.º é o prémio grande
+const TOUR = { fee: 500, lvl: 4, rounds: [
+  { name: 'Quartos de final', ai: 1, noise: 0.04,  aim: 600, prize: 150,  xp: 60 },
+  { name: 'Meias-finais',     ai: 2, noise: 0.02,  aim: 380, prize: 350,  xp: 90 },
+  { name: 'Final',            ai: 3, noise: 0.005, aim: 240, prize: 1500, xp: 150 },
+] };
+// Desafios: disposições fixas. cue = [x,y]; balls = [[número,x,y],...]; goal = bolas a meter; avoid = bolas proibidas;
+// par = tacadas para 3 estrelas (par+1 = 2 estrelas); max = tacadas permitidas. Fácil de editar à mão.
+const CHALLENGES = [
+/*CHAL_START*/
+  { cue:[198,473], goal:[7], avoid:[], par:1, max:3, balls:[[7,285,685]] },   // 1
+  { cue:[246,415], goal:[3], avoid:[], par:1, max:3, balls:[[3,49,588]] },   // 2
+  { cue:[130,562], goal:[11], avoid:[], par:1, max:3, balls:[[11,198,333]] },   // 3
+  { cue:[219,488], goal:[5], avoid:[], par:1, max:3, balls:[[5,250,328]] },   // 4
+  { cue:[192,598], goal:[11], avoid:[], par:1, max:3, balls:[[11,107,556]] },   // 5
+  { cue:[279,477], goal:[2,3], avoid:[], par:2, max:4, balls:[[2,342,196],[3,111,75]] },   // 6
+  { cue:[71,413], goal:[15,6], avoid:[], par:2, max:4, balls:[[15,118,387],[6,209,642]] },   // 7
+  { cue:[312,656], goal:[2,9], avoid:[], par:2, max:4, balls:[[2,100,207],[9,177,401]] },   // 8
+  { cue:[314,521], goal:[2,1], avoid:[], par:2, max:4, balls:[[2,195,370],[1,274,88],[4,290,162]] },   // 9
+  { cue:[107,523], goal:[14,10], avoid:[], par:2, max:4, balls:[[14,163,90],[10,99,612],[5,150,279]] },   // 10
+  { cue:[219,433], goal:[1], avoid:[], par:1, max:3, balls:[[1,199,409],[5,193,201],[7,266,395],[10,181,491]] },   // 11
+  { cue:[147,606], goal:[14], avoid:[], par:1, max:3, balls:[[14,112,636],[6,234,304],[9,230,267],[3,274,372]] },   // 12
+  { cue:[253,618], goal:[14], avoid:[], par:1, max:3, balls:[[14,215,344],[5,238,424],[4,224,248],[10,306,143]] },   // 13
+  { cue:[172,481], goal:[13,12], avoid:[], par:2, max:4, balls:[[13,243,342],[12,319,171],[7,267,274],[4,290,202],[14,221,364]] },   // 14
+  { cue:[146,557], goal:[10,15], avoid:[], par:2, max:4, balls:[[10,117,209],[15,339,167],[6,229,523],[2,132,401],[3,131,435]] },   // 15
+  { cue:[272,520], goal:[15,1,10], avoid:[], par:3, max:5, balls:[[15,245,668],[1,329,190],[10,244,377],[6,121,233]] },   // 16
+  { cue:[87,468], goal:[6,11,15], avoid:[], par:3, max:5, balls:[[6,97,522],[11,246,172],[15,270,340],[1,269,599]] },   // 17
+  { cue:[81,553], goal:[9,4,2], avoid:[], par:3, max:5, balls:[[9,205,362],[4,251,658],[2,176,314],[5,172,258]] },   // 18
+  { cue:[196,575], goal:[1,13,2], avoid:[], par:3, max:5, balls:[[1,273,388],[13,169,62],[2,51,612],[6,204,182],[11,192,239]] },   // 19
+  { cue:[105,490], goal:[14,1,4], avoid:[], par:3, max:5, balls:[[14,233,401],[1,61,206],[4,216,560],[6,78,280],[15,205,422]] },   // 20
+  { cue:[124,499], goal:[2,4,5,6], avoid:[], par:4, max:6, balls:[[2,324,609],[4,214,98],[5,240,181],[6,212,432]] },   // 21
+  { cue:[293,423], goal:[2,6,1,4], avoid:[], par:4, max:6, balls:[[2,336,579],[6,308,565],[1,258,584],[4,183,596]] },   // 22
+  { cue:[257,517], goal:[1,2,12,6], avoid:[8], par:4, max:6, balls:[[1,275,598],[2,125,392],[12,144,571],[6,97,526],[8,66,521]] },   // 23
+  { cue:[202,456], goal:[7,6,13,11], avoid:[8], par:4, max:6, balls:[[7,141,338],[6,229,541],[13,304,109],[11,74,515],[8,265,515]] },   // 24
+  { cue:[246,481], goal:[10,9,2,5], avoid:[8], par:4, max:6, balls:[[10,251,341],[9,166,327],[2,268,71],[5,219,662],[8,244,219]] },   // 25
+  { cue:[225,424], goal:[1,15,4], avoid:[8], par:3, max:5, balls:[[1,300,602],[15,53,575],[4,180,334],[5,267,545],[12,132,508],[10,107,213],[8,138,150]] },   // 26
+  { cue:[198,489], goal:[7,5,14], avoid:[8], par:3, max:5, balls:[[7,176,405],[5,348,163],[14,317,597],[12,182,133],[15,256,80],[10,188,450],[8,136,483]] },   // 27
+  { cue:[116,573], goal:[12,5,11], avoid:[8], par:3, max:5, balls:[[12,165,386],[5,299,123],[11,218,335],[1,318,627],[2,175,413],[4,137,460],[8,177,307]] },   // 28
+  { cue:[234,472], goal:[11,12,7,3], avoid:[8], par:4, max:6, balls:[[11,291,484],[12,224,318],[7,101,117],[3,210,614],[10,75,162],[9,303,111],[14,268,365],[8,120,366]] },   // 29
+  { cue:[228,408], goal:[5,4,12,6], avoid:[8], par:3, max:5, balls:[[5,137,675],[4,109,517],[12,257,399],[6,147,354],[10,215,537],[11,142,487],[9,209,202],[8,330,452]] },   // 30
+/*CHAL_END*/
+];
 const TITLES = ['Novato', 'Amador', 'Semi-Pro', 'Pro', 'Mestre', 'Lenda'];
 const NOADS_ID = 'remove_ads';
 const SAVE_KEY = 'pool8_save_v1';
 let save = { coins:500, wins:0, losses:0, cues:[0], cue:0, cloths:[0], cloth:0, noAds:false, lastDaily:'', streak:0, matches:0,
-  xp:0, pots:0, winStreak:0, bestStreak:0, missions:{ day:'', prog:{}, done:{} }, mute:false, tutDone:false, firstDone:false };
+  xp:0, pots:0, winStreak:0, bestStreak:0, missions:{ day:'', prog:{}, done:{} }, mute:false, tutDone:false, firstDone:false,
+  chal:{}, tour:null, ach:{}, dailyBest:0, bestShot:0, tourWins:0, perfect:0 };
 try { Object.assign(save, JSON.parse(localStorage.getItem(SAVE_KEY) || '{}')); } catch (e) {}
-if (save.matches > 0) save.firstDone = save.tutDone = true;   // saves antigos: já jogou
+if (save.matches > 0) save.firstDone = save.tutDone = true;
+if (save.tour && save.tour.live) { save.tour = null; save.losses++; save.matches++; save.winStreak = 0; }   // recarregou a meio de uma ronda = abandono   // saves antigos: já jogou
+if (!save.chal || typeof save.chal !== 'object') save.chal = {};
+if (!save.ach || typeof save.ach !== 'object') save.ach = {};
 if (!save.missions || typeof save.missions !== 'object') save.missions = { day:'', prog:{}, done:{} };
-const persist = () => { try { localStorage.setItem(SAVE_KEY, JSON.stringify(save)); } catch (e) {} refreshCoins(); };
+const persist = () => { try { localStorage.setItem(SAVE_KEY, JSON.stringify(save)); } catch (e) {} refreshCoins(); checkAch(); };
 const curCue = () => CUES[save.cue] || CUES[0], curCloth = () => CLOTHS[save.cloth] || CLOTHS[0];
 
 // ---------- Monetização (anúncios + compras) ----------
@@ -300,7 +370,48 @@ function addXp(n) { // devolve texto se subiu de nível
   if (after <= before) return '';
   let bonus = 0; for (let l = before + 1; l <= after; l++) bonus += 100 * l;
   save.coins += bonus;
-  return ` Nível ${after} (${titleOf(after)})! +🪙${bonus}.`;
+  const unl = [...ROOMS.filter(r => r.lvl > before && r.lvl <= after).map(r => 'sala ' + r.name), ...CUES.filter(c => c.lvl > before && c.lvl <= after).map(c => c.name)];
+  if (TOUR.lvl > before && TOUR.lvl <= after) unl.push('Torneio');
+  return ` Nível ${after} (${titleOf(after)})! +🪙${bonus}.` + (unl.length ? ` Desbloqueaste: ${unl.join(', ')}.` : '');
+}
+const totalStars = () => Object.values(save.chal).reduce((a, b) => a + b, 0);
+const chalDone = () => Object.values(save.chal).filter(v => v > 0).length;
+const ACH = [
+  { id: 'first_win', name: 'Primeira vitória',   desc: 'Ganha 1 partida',                 r: 50,   prog: () => [save.wins, 1] },
+  { id: 'wins10',    name: 'Veterano',           desc: 'Ganha 10 partidas',               r: 150,  prog: () => [save.wins, 10] },
+  { id: 'wins50',    name: 'Campeão',            desc: 'Ganha 50 partidas',               r: 500,  prog: () => [save.wins, 50] },
+  { id: 'pots25',    name: 'Boa pontaria',       desc: 'Mete 25 bolas',                   r: 50,   prog: () => [save.pots, 25] },
+  { id: 'pots250',   name: 'Máquina de bolas',   desc: 'Mete 250 bolas',                  r: 300,  prog: () => [save.pots, 250] },
+  { id: 'streak3',   name: 'Em chamas',          desc: '3 vitórias seguidas',             r: 100,  prog: () => [save.bestStreak, 3] },
+  { id: 'streak7',   name: 'Imparável',          desc: '7 vitórias seguidas',             r: 400,  prog: () => [save.bestStreak, 7] },
+  { id: 'shot3',     name: 'Tripla!',            desc: 'Mete 3 bolas numa só tacada',     r: 150,  prog: () => [save.bestShot, 3] },
+  { id: 'lvl5',      name: 'Nível 5',            desc: 'Chega ao nível 5',                r: 100,  prog: () => [lvlInfo().l, 5] },
+  { id: 'lvl10',     name: 'Nível 10',           desc: 'Chega ao nível 10',               r: 300,  prog: () => [lvlInfo().l, 10] },
+  { id: 'cue2',      name: 'Novo taco',          desc: 'Tem 2 tacos',                     r: 50,   prog: () => [save.cues.length, 2] },
+  { id: 'cuesAll',   name: 'Colecionador',       desc: 'Tem todos os tacos',              r: 500,  prog: () => [save.cues.length, CUES.length] },
+  { id: 'cloth3',    name: 'Decorador',          desc: 'Tem 3 panos',                     r: 100,  prog: () => [save.cloths.length, 3] },
+  { id: 'daily7',    name: 'Fiel',               desc: 'Prémio diário 7 dias seguidos',   r: 200,  prog: () => [save.dailyBest, 7] },
+  { id: 'chal1',     name: 'Desafiante',         desc: 'Completa 1 desafio',              r: 50,   prog: () => [chalDone(), 1] },
+  { id: 'chal10',    name: 'Mestre dos desafios', desc: 'Completa 10 desafios',           r: 200,  prog: () => [chalDone(), 10] },
+  { id: 'stars30',   name: 'Caçador de estrelas', desc: 'Junta 30 estrelas',              r: 400,  prog: () => [totalStars(), 30] },
+  { id: 'stars60',   name: 'Constelação',        desc: 'Junta 60 estrelas',               r: 800,  prog: () => [totalStars(), 60] },
+  { id: 'tour',      name: 'Rei do torneio',     desc: 'Ganha um torneio',                r: 600,  prog: () => [save.tourWins, 1] },
+  { id: 'perfect',   name: 'Jogo perfeito',      desc: 'Ganha sem o CPU meter nenhuma bola', r: 300, prog: () => [save.perfect, 1] },
+  { id: 'rich',      name: 'Milionário',         desc: 'Junta 10 000 moedas',             r: 100,  prog: () => [save.coins, 10000] },
+];
+let achQueue = [], achBusy = false;
+function showAch() {
+  if (achBusy || !achQueue.length) return;
+  achBusy = true; const a = achQueue.shift(), el = $('achToast');
+  el.textContent = `🏆 ${a.name} · +🪙${a.r}`; el.classList.add('show'); Snd.win();
+  setTimeout(() => { el.classList.remove('show'); setTimeout(() => { achBusy = false; showAch(); }, 350); }, 2800);
+}
+function checkAch() {
+  const got = [];
+  for (const a of ACH) { if (save.ach[a.id]) continue; const [c, g] = a.prog(); if (c >= g) { save.ach[a.id] = 1; save.coins += a.r; got.push(a); } }
+  const n = got.length;
+  if (n > 2) achQueue.push({ name: n + ' conquistas', r: got.reduce((x, a) => x + a.r, 0) }); else achQueue.push(...got);
+  if (n) { try { localStorage.setItem(SAVE_KEY, JSON.stringify(save)); } catch (e) {} refreshCoins(); showAch(); }
 }
 function ensureMissions() { const d = dayKey(); if (save.missions.day !== d) save.missions = { day: d, prog: {}, done: {} }; }
 function bump(key, n = 1) { ensureMissions(); save.missions.prog[key] = (save.missions.prog[key] || 0) + n; }
@@ -316,7 +427,7 @@ document.querySelectorAll('[data-close]').forEach(b => b.onclick = () => open('m
 function renderProfile() {
   ensureMissions();
   const li = lvlInfo();
-  $('profInfo').innerHTML = `<div class="t"><b>${titleOf(li.l)} · Nível ${li.l}</b><div class="xp"><i style="width:${Math.round(li.x / li.need * 100)}%"></i></div><small>${li.x}/${li.need} XP</small><small>Vitórias ${save.wins} · Derrotas ${save.losses} · Melhor sequência ${save.bestStreak} · Bolas metidas ${save.pots}</small></div>`;
+  $('profInfo').innerHTML = `<div class="t"><b>${titleOf(li.l)} · Nível ${li.l}</b><div class="xp"><i style="width:${Math.round(li.x / li.need * 100)}%"></i></div><small>${li.x}/${li.need} XP</small><small>Vitórias ${save.wins} (${save.wins + save.losses ? Math.round(save.wins / (save.wins + save.losses) * 100) : 0}%) · Derrotas ${save.losses}</small><small>Melhor sequência ${save.bestStreak} · Bolas metidas ${save.pots} · Melhor tacada ${save.bestShot}</small><small>Desafios ⭐ ${totalStars()}/${CHALLENGES.length * 3} · Conquistas ${Object.keys(save.ach).length}/${ACH.length}</small></div>`;
   const box = $('missionList'); box.innerHTML = '';
   MISSIONS.forEach(m => {
     const prog = Math.min(m.goal, save.missions.prog[m.key] || 0), done = !!save.missions.done[m.id], ready = prog >= m.goal && !done;
@@ -327,13 +438,42 @@ function renderProfile() {
   });
 }
 
+function renderAch() {
+  const box = $('achList'); box.innerHTML = ''; let n = 0;
+  ACH.forEach(a => {
+    const [c, g] = a.prog(), done = !!save.ach[a.id]; if (done) n++;
+    const d = document.createElement('div'); d.className = 'card';
+    d.innerHTML = `<div class="t"><b>${done ? '🏆' : '🔒'} ${a.name}</b><small>${a.desc} · ${done ? 'Concluída' : Math.min(c, g) + '/' + g}</small></div><span>🪙${a.r}</span>`;
+    box.appendChild(d);
+  });
+  $('achSum').textContent = `${n}/${ACH.length} desbloqueadas`;
+}
+function dailyInfo() {
+  const today = dayKey(), yd = new Date();
+  yd.setDate(yd.getDate() - 1);
+  const y = dayKey(yd);
+  if (save.lastDaily >= today) return { done: save.streak, next: null };
+  if (save.lastDaily === y) return save.streak >= 7 ? { done: 0, next: 1 } : { done: save.streak, next: save.streak + 1 };
+  return { done: 0, next: 1 };
+}
+function renderDaily() {
+  const d = dailyInfo(), g = $('dailyGrid'); g.innerHTML = '';
+  DAILY.forEach((amt, i) => {
+    const day = i + 1, c = document.createElement('div');
+    c.className = 'dcell' + (day <= d.done ? ' done' : '') + (day === d.next ? ' today' : '') + (day === 7 ? ' big' : '');
+    c.innerHTML = `<small>Dia ${day}</small><b>${day === 7 ? '🎁' : '🪙'}${amt}</b>${day <= d.done ? '<i>✔</i>' : ''}`;
+    g.appendChild(c);
+  });
+  $('btnClaim').disabled = !d.next; $('btnClaim').textContent = d.next ? `Receber 🪙${DAILY[d.next - 1]}` : 'Volta amanhã';
+  $('dailyMsg').textContent = d.next ? (d.next === 1 ? 'Começa a tua sequência! Não faltes nenhum dia.' : `Sequência: ${d.done} dia(s). Não percas o dia ${d.next}!`) : `Sequência: ${save.streak} dia(s). Volta amanhã!`;
+}
 function renderRooms() {
   const box = $('roomList'); box.innerHTML = '';
   const first = !save.firstDone;
   ROOMS.forEach((r, i) => {
-    const locked = first && i > 0, free = first && i === 0;
+    const lv = lvlInfo().l, locked = (first && i > 0) || lv < r.lvl, free = first && i === 0;
     const d = document.createElement('div'); d.className = 'card';
-    d.innerHTML = `<div class="t"><b>${r.name}</b><small>${free ? 'Entrada GRÁTIS · Prémio 🪙' + r.prize + ' · 1.ª partida fácil' : locked ? 'Termina a 1.ª partida para desbloquear' : 'Entrada 🪙' + r.fee + ' · Prémio 🪙' + r.prize}</small></div><button ${locked ? 'disabled' : ''}>${locked ? '🔒' : 'Jogar'}</button>`;
+    d.innerHTML = `<div class="t"><b>${r.name}</b><small>${free ? 'Entrada GRÁTIS · Prémio 🪙' + r.prize + ' · 1.ª partida fácil' : locked ? (first ? 'Termina a 1.ª partida para desbloquear' : 'Desbloqueia no nível ' + r.lvl) : 'Entrada 🪙' + r.fee + ' · Prémio 🪙' + r.prize}</small></div><button ${locked ? 'disabled' : ''}>${locked ? '🔒' : 'Jogar'}</button>`;
     d.querySelector('button').onclick = async () => {
       if (locked) return;
       if (!free && save.coins < r.fee) { if (confirm('Sem moedas. Ver um vídeo para ganhar 150 moedas?')) await watchForCoins(); return; }
@@ -348,9 +488,9 @@ function renderShop() {
   document.querySelectorAll('#shopTabs button').forEach(b => b.classList.toggle('on', b.dataset.t === shopTab));
   const card = (sw, title, sub, label, fn, dis) => { const d = document.createElement('div'); d.className = 'card'; d.innerHTML = `${sw ? `<div class="sw" style="background:${sw}"></div>` : ''}<div class="t"><b>${title}</b><small>${sub}</small></div><button ${dis ? 'disabled' : ''}>${label}</button>`; d.querySelector('button').onclick = fn; box.appendChild(d); };
   if (shopTab === 'cues') CUES.forEach((c, i) => {
-    const own = save.cues.includes(i);
-    card(c.color, c.name, `Força +${Math.round((c.power - 1) * 100)}% · Efeito ${c.spin.toFixed(2).replace(/0$/, '')}x`, own ? (save.cue === i ? 'Em uso' : 'Usar') : '🪙' + c.price,
-      () => { if (own) save.cue = i; else if (save.coins >= c.price) { save.coins -= c.price; save.cues.push(i); save.cue = i; } else return toast('Moedas insuficientes'); persist(); renderShop(); }, own && save.cue === i);
+    const own = save.cues.includes(i), lock = !own && c.lvl > lvlInfo().l;
+    card(c.color, c.name, `Força +${Math.round((c.power - 1) * 100)}% · Efeito ${c.spin.toFixed(2).replace(/0$/, '')}x` + (lock ? ` · Nível ${c.lvl}` : ''), own ? (save.cue === i ? 'Em uso' : 'Usar') : lock ? '🔒' : '🪙' + c.price,
+      () => { if (lock) return; if (own) save.cue = i; else if (save.coins >= c.price) { save.coins -= c.price; save.cues.push(i); save.cue = i; } else return toast('Moedas insuficientes'); persist(); renderShop(); }, (own && save.cue === i) || lock);
   });
   if (shopTab === 'cloth') CLOTHS.forEach((c, i) => {
     const own = save.cloths.includes(i), sp = Math.round((1 / c.fr - 1) * 100);
@@ -366,12 +506,11 @@ function renderShop() {
 document.querySelectorAll('#shopTabs button').forEach(b => b.onclick = () => { shopTab = b.dataset.t; renderShop(); });
 async function watchForCoins() { if (await Monet.rewarded()) { save.coins += 150; persist(); toast('+150 moedas!'); } }
 function claimDaily() {
-  const today = dayKey();
-  if (save.lastDaily === today) return toast('Já recebeste o prémio de hoje. Volta amanhã!');
-  const y = dayKey(new Date(Date.now() - 864e5));
-  save.streak = save.lastDaily === y ? Math.min(7, save.streak + 1) : 1;
-  const amt = 100 * save.streak; save.coins += amt; save.lastDaily = today; persist();
-  toast(`Dia ${save.streak}: +${amt} moedas`);
+  const d = dailyInfo();
+  if (!d.next) return toast('Já recebeste o prémio de hoje. Volta amanhã!');
+  save.streak = d.next; save.lastDaily = dayKey(); save.dailyBest = Math.max(save.dailyBest, d.next);
+  const amt = DAILY[d.next - 1]; save.coins += amt; persist();
+  toast(`Dia ${d.next}: +${amt} moedas`); renderDaily();
 }
 
 // ---------- Estado ----------
@@ -394,6 +533,7 @@ let paused = false, gameId = 0, fMul = 1, SIM = false, TS = 1, autoPlay = false;
 let strike = null;          // animação do taco: recua, avança e só então a bola sai
 let slow = 0, cam = { t: 0, fx: W / 2, fy: H / 2 };   // câmara lenta + zoom na última bola
 let shotPw = 0;
+let mstat = { pots: 0, run: 0, maxRun: 0, opp: 0 }, chalIdx = 0, chalShots = 0, chalCur = null, overNext = 0;
 let shotCount = 0, potCount = 0, easyCpu = false, tut = null, tutForce = false;   // 1.ª partida fácil; tutorial
 let sinks = [], floats = [];  // bolas a afundar e textos flutuantes
 
@@ -445,10 +585,10 @@ const isSolid = n => n >= 1 && n <= 7;
 const isStripe = n => n >= 9;
 const groupOf = n => n === 8 ? 'eight' : (isSolid(n) ? 'solid' : 'stripe');
 
+function newCue(x, y) { const c = mk(0, x, y); c.top = 0; c.side = 0; c.touched = false; c.dx = 0; c.dy = -1; return c; }
 function rack() {
   balls = [];
-  cue = mk(0, W / 2, HEAD_Y);
-  cue.top = 0; cue.side = 0; cue.touched = false; cue.dx = 0; cue.dy = -1;
+  cue = newCue(W / 2, HEAD_Y);
   balls.push(cue);
   const rest = [1,2,3,4,5,6,7,9,10,11,12,13,14,15];
   for (let i = rest.length - 1; i > 0; i--) { const j = Math.random() * (i + 1) | 0; [rest[i], rest[j]] = [rest[j], rest[i]]; }
@@ -472,7 +612,7 @@ function newGame(m, rm) {
   if (m === 'cpu') { room = easyCpu ? ROOMS[0] : (rm || room); if (!easyCpu) save.coins -= room.fee; persist(); }
   rack();
   fMul = curCloth().fr;
-  turn = 0; groups = [null, null]; ballInHand = false; firstBreak = true;
+  turn = 0; groups = [null, null]; ballInHand = false; firstBreak = true; mstat = { pots: 0, run: 0, maxRun: 0, opp: 0 };
   aimAngle = -Math.PI / 2; power = 0; shot = null; pre = null;
   $('n0').textContent = m === 'cpu' ? 'Tu' : 'Jogador 1';
   $('n1').textContent = m === 'cpu' ? 'CPU' : 'Jogador 2';
@@ -544,9 +684,19 @@ function judge(p, sh, pr) {
 }
 
 function resolveShot() {
+  if (mode === 'chal') return resolveChal();
   const p = turn, opp = 1 - p;
   const res = judge(p, shot, pre);
-  if (mode === 'cpu' && p === 0 && shot.pocketed.length) { save.pots += shot.pocketed.length; bump('pot', shot.pocketed.length); }
+  if (mode === 'cpu') {
+    const n = shot.pocketed.length;
+    if (p === 0) {
+      if (n) { save.pots += n; bump('pot', n); }
+      const nb = shot.pocketed.filter(x => x !== 8).length;
+      if (!res.foul && nb > save.bestShot) save.bestShot = nb;
+      if (!res.foul && res.keep && n) { mstat.run++; mstat.maxRun = Math.max(mstat.maxRun, mstat.run); } else mstat.run = 0;
+      mstat.pots += n;
+    } else mstat.opp += n;
+  }
   if (res.end) return endGame(res.end.winner, res.end.why);
   if (res.respot8) {
     const e = balls.find(b => b.n === 8), sp = nearestFree(W / 2, APEX_Y - 2 * RACK_DY);
@@ -581,26 +731,10 @@ function resolveShot() {
 const pName = p => $('n' + p).textContent;
 
 let lastPrize = 0;
-function endGame(winner, why) {
-  state = 'over'; cpuS = null; strike = null;
-  if (tut) finishTut();
-  updateHud();
-  $('overTitle').textContent = mode === 'cpu' ? (winner === 0 ? '🏆 Ganhaste!' : '😢 Perdeste') : `🏆 ${pName(winner)} ganha!`;
-  let prize = 0, extra = '';
-  if (mode === 'cpu') {
-    const ri = Math.max(0, ROOMS.indexOf(room));
-    save.firstDone = true;
-    bump('play');
-    if (winner === 0) {
-      prize = room.prize; save.coins += prize; save.wins++; save.winStreak++; save.bestStreak = Math.max(save.bestStreak, save.winStreak);
-      bump('win'); extra = addXp(40 + 20 * ri);
-    } else { save.losses++; save.winStreak = 0; extra = addXp(10); }
-    save.matches++; persist();
-  }
-  lastPrize = prize;
-  $('btnDouble').style.display = prize ? '' : 'none';
-  $('overMsg').textContent = why + (prize ? ` Ganhaste 🪙${prize}.` : '') + extra;
-  const id = gameId, won = mode === 'cpu' ? winner === 0 : true;
+function scheduleOver(won, prize, canDouble) {
+  lastPrize = canDouble ? prize : 0;
+  $('btnDouble').style.display = canDouble && prize ? '' : 'none';
+  const id = gameId;
   setTimeout(() => {
     if (id !== gameId || state !== 'over') return;
     $('prizeCnt').textContent = '';
@@ -608,6 +742,35 @@ function endGame(winner, why) {
     if (won) { confettiBurst(); Snd.win(); vib([40, 60, 40, 60, 90]); } else Snd.lose();
     if (prize) countUp($('prizeCnt'), prize, 1100, '🪙 +');
   }, 700);
+}
+function endGame(winner, why) {
+  state = 'over'; cpuS = null; strike = null;
+  if (tut) finishTut();
+  updateHud();
+  $('overTitle').textContent = mode === 'cpu' ? (winner === 0 ? '🏆 Ganhaste!' : '😢 Perdeste') : `🏆 ${pName(winner)} ganha!`;
+  $('btnAgain').textContent = 'Jogar outra vez'; $('btnMenu').textContent = 'Menu';
+  let prize = 0, extra = '';
+  if (mode === 'cpu') {
+    const ri = Math.max(0, ROOMS.indexOf(room));
+    save.firstDone = true;
+    bump('play');
+    if (winner === 0) {
+      prize = room.prize; save.coins += prize; save.wins++; save.winStreak++; save.bestStreak = Math.max(save.bestStreak, save.winStreak);
+      if (!easyCpu && mstat.opp === 0) save.perfect++;
+      bump('win'); extra = addXp((room.xp || 40 + 20 * ri) + 3 * mstat.pots + 5 * mstat.maxRun);
+    } else { save.losses++; save.winStreak = 0; extra = addXp(10 + 2 * mstat.pots); }
+    if (room.tour && save.tour) {
+      save.tour.live = false;
+      if (winner === 0) {
+        save.tour.round++;
+        if (save.tour.round >= TOUR.rounds.length) { save.tour = null; save.tourWins++; extra += ' Campeão do torneio!'; }
+        else { extra += ' Passas à próxima ronda!'; $('btnAgain').textContent = 'Próxima ronda ▶'; }
+      } else { save.tour = null; extra += ' Eliminado do torneio.'; }
+    }
+    save.matches++; persist();
+  }
+  $('overMsg').textContent = why + (prize ? ` Ganhaste 🪙${prize}.` : '') + extra;
+  scheduleOver(mode === 'cpu' ? winner === 0 : true, prize, true);
 }
 function countUp(el, target, ms, prefix) {
   const t0 = performance.now();
@@ -633,6 +796,82 @@ function confettiBurst() {
     }
     if (confetti.length) requestAnimationFrame(tick); else fxRun = false;
   }); }
+}
+
+// ---------- Desafios ----------
+function chalText(L) {
+  const g = L.goal, all = L.balls.every(b => g.includes(b[0]));
+  let t = g.length === 1 ? `Mete a ${g[0]}` : all ? 'Limpa a mesa' : `Mete ${g.slice(0, -1).join(', ')} e ${g[g.length - 1]}`;
+  t += ` em ${L.max} tacadas`;
+  if (L.avoid && L.avoid.length) t += ` · não metas a ${L.avoid.join(', ')}`;
+  return t;
+}
+function startChal(i, override) {
+  const L = override || CHALLENGES[i]; chalCur = L; chalIdx = i; chalShots = 0;
+  mode = 'chal'; gameId++; paused = false; cpuS = null; strike = null; slow = 0; sinks = []; floats = []; easyCpu = false; tut = null; hideCoach();
+  balls = []; cue = newCue(L.cue[0], L.cue[1]); balls.push(cue);
+  L.balls.forEach(b => balls.push(mk(b[0], b[1], b[2])));
+  fMul = curCloth().fr; turn = 0; groups = [null, null]; ballInHand = false; firstBreak = false; shot = null; pre = null;
+  const g = balls.find(b => b.n === L.goal[0]); aimAngle = g ? Math.atan2(g.y - cue.y, g.x - cue.x) : -Math.PI / 2; power = 0;
+  document.querySelectorAll('.overlay').forEach(o => { if (o.id !== 'adov') o.classList.remove('show'); });
+  state = 'aim';
+  startTurn(chalText(L));
+}
+function resolveChal() {
+  const L = chalCur; chalShots++;
+  if (shot.scratch) { const sp = nearestFree(L.cue[0], L.cue[1]); cue.alive = true; cue.x = sp.x; cue.y = sp.y; cue.vx = cue.vy = 0; addFloat(W / 2, H * 0.42, 'Falta', '#ff6a5a', 1.5); Snd.foul(); }
+  if (L.avoid && shot.pocketed.some(n => L.avoid.includes(n))) return chalEnd(false, 0, 'Meteste uma bola proibida!');
+  if (L.goal.every(n => { const b = balls.find(x => x.n === n); return !b || !b.alive; })) return chalEnd(true, chalShots <= L.par ? 3 : chalShots <= L.par + 1 ? 2 : 1);
+  if (chalShots >= L.max) return chalEnd(false, 0, 'Sem tacadas.');
+  updateHud(); startTurn(`Tacada ${chalShots + 1}/${L.max}`);
+}
+function chalEnd(win, stars, why) {
+  state = 'over'; cpuS = null; strike = null;
+  updateHud();
+  let coins = 0, extra = '';
+  if (win) {
+    const prev = save.chal[chalIdx] || 0;
+    if (stars > prev) { coins = (stars - prev) * 25 + (prev === 0 ? 25 : 0); save.coins += coins; save.chal[chalIdx] = stars; extra = addXp(10 * (stars - prev)); }
+    $('overTitle').textContent = '⭐'.repeat(stars) + '☆'.repeat(3 - stars) + ' Nível ' + (chalIdx + 1);
+    $('overMsg').textContent = `Concluído em ${chalShots} tacada(s) (par ${chalCur.par}).` + extra;
+  } else {
+    $('overTitle').textContent = '😢 Falhaste';
+    $('overMsg').textContent = why + ' Tenta outra vez!' + extra;
+  }
+  overNext = win && chalIdx < CHALLENGES.length - 1 ? chalIdx + 1 : chalIdx;
+  $('btnAgain').textContent = win && chalIdx < CHALLENGES.length - 1 ? 'Próximo nível ▶' : 'Repetir';
+  $('btnMenu').textContent = 'Níveis';
+  persist();
+  scheduleOver(win, coins, false);
+}
+function renderChal() {
+  const g = $('chalGrid'); g.innerHTML = '';
+  CHALLENGES.forEach((L, i) => {
+    const st = save.chal[i] || 0, locked = i > 0 && !(save.chal[i - 1] > 0);
+    const b = document.createElement('button'); b.className = 'lv'; b.disabled = locked;
+    b.innerHTML = `${locked ? '🔒' : i + 1}<small>${'★'.repeat(st)}${'☆'.repeat(3 - st)}</small>`;
+    b.onclick = () => startChal(i);
+    g.appendChild(b);
+  });
+  $('chalSum').textContent = `${totalStars()}/${CHALLENGES.length * 3} ⭐ · ${chalDone()}/${CHALLENGES.length} completos`;
+}
+
+// ---------- Torneio ----------
+const tourOk = () => save.firstDone && lvlInfo().l >= TOUR.lvl;
+function renderTour() {
+  const r = save.tour ? save.tour.round : -1, ok = tourOk(), box = $('tourList'); box.innerHTML = '';
+  $('tourMsg').textContent = !ok ? `Disponível a partir do nível ${TOUR.lvl} (e depois da 1.ª partida).` : save.tour ? `Ronda ${r + 1} de ${TOUR.rounds.length} em curso. Se abandonares, ficas eliminado.` : `Entrada 🪙${TOUR.fee}. 3 rondas contra CPU cada vez mais forte. Prémio final 🪙${TOUR.rounds[2].prize}.`;
+  TOUR.rounds.forEach((t, i) => {
+    const d = document.createElement('div'); d.className = 'card';
+    d.innerHTML = `<div class="t"><b>${i < r ? '✔' : i === r ? '▶' : '🔒'} ${t.name}</b><small>CPU nível ${t.ai} · Prémio 🪙${t.prize}</small></div>`;
+    box.appendChild(d);
+  });
+  $('btnTourGo').disabled = !ok; $('btnTourGo').textContent = !ok ? '🔒' : save.tour ? 'Continuar torneio' : `Entrar (🪙${TOUR.fee})`;
+}
+function playTourRound() {
+  const t = TOUR.rounds[save.tour.round];
+  save.tour.live = true; persist();
+  newGame('cpu', { name: t.name, fee: 0, prize: t.prize, noise: t.noise, ai: t.ai, aim: t.aim, xp: t.xp, lvl: 1, tour: true });
 }
 
 // ---------- Tacada ----------
@@ -1007,7 +1246,24 @@ function toast(msg) {
   toastEl.textContent = msg; toastEl.classList.add('show');
   clearTimeout(toastTimer); toastTimer = setTimeout(() => toastEl.classList.remove('show'), 2600);
 }
+function dotEl(b) {
+  const d = document.createElement('div');
+  d.className = 'dot' + (isStripe(b.n) ? ' stripe' : '');
+  d.style.background = isStripe(b.n) ? '#fff' : COLORS[b.n];
+  if (isStripe(b.n)) d.innerHTML = `<i style="position:absolute;left:0;right:0;top:3px;bottom:3px;background:${COLORS[b.n - 8]}"></i>`;
+  if (!b.alive) d.style.opacity = '.18';
+  return d;
+}
+function hudChal() {
+  const L = chalCur;
+  $('p0').classList.toggle('active', state === 'aim'); $('p1').classList.remove('active');
+  $('n0').textContent = `Desafio ${chalIdx + 1}`; $('g0').textContent = `Tacada ${Math.min(chalShots + 1, L.max)}/${L.max}`; $('d0').innerHTML = '';
+  $('n1').textContent = 'Objetivo'; $('g1').textContent = `par ${L.par}`;
+  const box = $('d1'); box.innerHTML = '';
+  L.goal.forEach(n => { const b = balls.find(x => x.n === n); if (b) box.appendChild(dotEl(b)); });
+}
 function updateHud() {
+  if (mode === 'chal' && chalCur) return hudChal();
   for (let p = 0; p < 2; p++) {
     $('p' + p).classList.toggle('active', state !== 'menu' && state !== 'over' && turn === p);
     const g = groups[p];
@@ -1015,14 +1271,7 @@ function updateHud() {
     const box = $('d' + p); box.innerHTML = '';
     if (!g) continue;
     const list = balls.filter(b => b.n && groupOf(b.n) === g).sort((a, b) => a.n - b.n);
-    for (const b of list) {
-      const d = document.createElement('div');
-      d.className = 'dot' + (isStripe(b.n) ? ' stripe' : '');
-      d.style.background = isStripe(b.n) ? '#fff' : COLORS[b.n];
-      if (isStripe(b.n)) d.innerHTML = `<i style="position:absolute;left:0;right:0;top:3px;bottom:3px;background:${COLORS[b.n - 8]}"></i>`;
-      if (!b.alive) d.style.opacity = '.18';
-      box.appendChild(d);
-    }
+    for (const b of list) box.appendChild(dotEl(b));
     if (ownCleared(p)) { const e = document.createElement('div'); e.className = 'dot'; e.style.background = COLORS[8]; box.appendChild(e); }
   }
 }
@@ -1322,20 +1571,38 @@ $('btn2p').onclick = () => { audio(); newGame('2p'); };
 $('btnTut').onclick = () => { audio(); tutForce = true; newGame('2p'); };
 $('btnProf').onclick = () => { renderProfile(); open('prof'); };
 $('btnShop').onclick = () => { renderShop(); open('shop'); };
-$('btnDaily').onclick = claimDaily;
+$('btnDaily').onclick = () => { renderDaily(); open('daily'); };
+$('btnClaim').onclick = claimDaily;
+$('btnChal').onclick = () => { audio(); renderChal(); open('chal'); };
+$('btnTour').onclick = () => { audio(); renderTour(); open('tour'); };
+$('btnAch').onclick = () => { renderAch(); open('ach'); };
+$('achBack').onclick = () => { renderProfile(); open('prof'); };
+$('btnTourGo').onclick = () => {
+  if (!tourOk()) return;
+  if (!save.tour) {
+    if (save.coins < TOUR.fee) return toast('Moedas insuficientes para a entrada');
+    save.coins -= TOUR.fee; save.tour = { round: 0 }; persist();
+  }
+  playTourRound();
+};
 $('btnVideo').onclick = watchForCoins;
 $('btnDouble').onclick = async () => { if (lastPrize && await Monet.rewarded()) { save.coins += lastPrize; persist(); $('btnDouble').style.display = 'none'; toast(`Prémio dobrado! +${lastPrize}`); lastPrize = 0; } };
 // intersticial a cada 3 partidas contra o CPU
 const afterMatch = async fn => { if (mode === 'cpu' && save.matches % 3 === 0) await Monet.interstitial(); fn(); };
 const toMenu = () => { if (tut) { tut = null; hideCoach(); } gameId++; cpuS = null; strike = null; slow = 0; sinks = []; floats = []; paused = false; state = 'menu'; open('menu'); updateHud(); };
-$('btnAgain').onclick = () => afterMatch(() => { if (mode === 'cpu') { renderRooms(); open('rooms'); } else newGame(mode); });
-$('btnMenu').onclick = () => afterMatch(toMenu);
+function overAgain() {
+  if (mode === 'chal') return startChal(overNext);
+  if (mode === 'cpu' && room.tour && save.tour) return playTourRound();
+  if (mode === 'cpu') { renderRooms(); open('rooms'); } else newGame(mode);
+}
+$('btnAgain').onclick = () => afterMatch(overAgain);
+$('btnMenu').onclick = () => afterMatch(() => { const wasChal = mode === 'chal'; toMenu(); if (wasChal) { renderChal(); open('chal'); } });
 
 // pausa / abandonar
 $('menuBtn').onclick = () => {
   if (state === 'menu' || state === 'over') return open('menu');
   paused = true;
-  $('pauseMsg').textContent = mode === 'cpu' ? (easyCpu ? 'Partida de treino grátis: podes abandonar sem perder nada.' : `Se abandonares, perdes a entrada (🪙${room.fee}) e conta como derrota.`) : 'Partida entre amigos em pausa.';
+  $('pauseMsg').textContent = mode === 'chal' ? 'Sair do desafio (não custa nada).' : mode === 'cpu' && room.tour ? 'Se abandonares, ficas eliminado do torneio.' : mode === 'cpu' ? (easyCpu ? 'Partida de treino grátis: podes abandonar sem perder nada.' : `Se abandonares, perdes a entrada (🪙${room.fee}) e conta como derrota.`) : 'Partida entre amigos em pausa.';
   open('pause');
 };
 $('btnResume').onclick = () => { paused = false; $('pause').classList.remove('show'); };
@@ -1343,8 +1610,10 @@ const updateMuteBtn = () => { $('muteBtn').textContent = Snd.muted ? '🔇' : '�
 $('muteBtn').onclick = () => { Snd.init(); Snd.setMuted(!Snd.muted); updateMuteBtn(); };
 updateMuteBtn();
 $('btnQuit').onclick = () => {
-  if (mode === 'cpu' && !easyCpu) { save.losses++; save.matches++; save.winStreak = 0; bump('play'); persist(); }
+  const wasChal = mode === 'chal';
+  if (mode === 'cpu' && !easyCpu) { save.losses++; save.matches++; save.winStreak = 0; bump('play'); if (room.tour) save.tour = null; persist(); }
   toMenu();
+  if (wasChal) { renderChal(); open('chal'); }
 };
 document.addEventListener('touchmove', e => { if (!e.target.closest('.grid, .overlay')) e.preventDefault(); }, { passive: false });
 document.addEventListener('contextmenu', e => e.preventDefault());
@@ -1352,9 +1621,11 @@ try { if (screen.orientation && screen.orientation.lock) screen.orientation.lock
 
 rack(); resize(); updateHud(); refreshCoins(); hideBannerIfPaid(); Monet.init();
 requestAnimationFrame(frame);
-window.__pool = {
+if (/[?&]debug\b/.test(location.search) || (() => { try { return !!localStorage.getItem('pool8_debug'); } catch (e) { return false; } })()) window.__pool = {
   get state() { return state; }, get balls() { return balls; }, get turn() { return turn; }, get groups() { return groups; },
-  fire, newGame, judge, simulate, rooms: ROOMS, save, Snd,
+  fire, newGame, judge, simulate, rooms: ROOMS, save, Snd, startChal, CHALLENGES, TOUR, ACH, lvlInfo,
+  sb: { snap, restoreSnap, get cue() { return cue; }, runSim(ang, pw) { const sv = shot; SIM = true; shot = newShot(); launch(ang, pw, 1, 0, 0); let n = 0; do { step(SUB); } while (++n < 2400 && anyMoving()); const r = shot; shot = sv; SIM = false; return r; } },
+  get mode() { return mode; }, get chalShots() { return chalShots; }, get tour() { return save.tour; },
   get sinks() { return sinks.length; }, get floats() { return floats.map(f => f.txt); }, get confetti() { return confetti.length; }, get slow() { return slow; },
   get shots() { return shotCount; }, get pots() { return potCount; }, get tut() { return tut && tut.step; }, get ballInHand() { return ballInHand; }, get easy() { return easyCpu; }, get firstBreak() { return firstBreak; }, set firstBreak(v) { firstBreak = !!v; },
   set auto(v) { autoPlay = !!v; }, set speed(v) { TS = v; }, get room() { return room; }, set room(r) { room = r; },
