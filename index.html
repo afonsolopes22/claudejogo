@@ -27,7 +27,7 @@
   #powerWrap { padding:2px 14px 12px; }
   #powerLabel { font-size:12px; color:var(--dim); display:flex; justify-content:space-between; align-items:center; margin-bottom:4px; gap:8px; }
   #nudge { display:flex; gap:6px; flex:none; }
-  #nudge button { min-width:0; font-size:14px; padding:4px 16px; border-radius:10px; touch-action:none; }
+  #nudge button { min-width:0; min-height:40px; font-size:14px; padding:5px 18px; border-radius:10px; touch-action:none; }
   #nudge.disabled { opacity:.4; pointer-events:none; }
   #ctl { display:flex; align-items:center; gap:10px; }
   #spin { width:52px; height:52px; border-radius:50%; background:radial-gradient(circle at 35% 30%,#fff,#cfd6d2); border:2px solid #2c6a45; position:relative; flex:none; touch-action:none; }
@@ -68,6 +68,46 @@
   .xp { height:10px; border-radius:6px; background:#06140c; overflow:hidden; margin:6px 0; } .xp i { display:block; height:100%; background:linear-gradient(90deg,#43d17a,#ffd54a); }
   #profInfo { width:100%; max-width:360px; flex:none; display:block; }
   #profInfo b { font-size:17px; }
+  /* toques e transições */
+  button { transition:transform .09s ease, filter .15s ease; }
+  button:active:not(:disabled) { transform:scale(.94); filter:brightness(1.12); }
+  .overlay.show { animation:fadeIn .22s ease both; }
+  .overlay.show > * { animation:rise .32s cubic-bezier(.2,.9,.3,1) backwards; }
+  .overlay.show > :nth-child(2) { animation-delay:.04s; } .overlay.show > :nth-child(3) { animation-delay:.08s; }
+  .overlay.show > :nth-child(4) { animation-delay:.12s; } .overlay.show > :nth-child(5) { animation-delay:.16s; }
+  .overlay.show > :nth-child(6) { animation-delay:.2s; } .overlay.show > :nth-child(7) { animation-delay:.24s; }
+  @keyframes fadeIn { from { opacity:0; } to { opacity:1; } }
+  @keyframes rise { from { opacity:0; transform:translateY(14px); } to { opacity:1; transform:none; } }
+  /* ecrãs largos: HUD e barra de força não esticam */
+  #hud, #banner, #powerWrap { width:100%; max-width:520px; align-self:center; }
+  /* ecrãs baixos: comprime o que não é a mesa */
+  @media (max-height:700px) {
+    #hud { padding:4px 8px; } .player { padding:3px 8px; } .dots { margin-top:2px; }
+    #powerLabel > span:first-child { display:none; } #powerLabel { justify-content:flex-end; margin-bottom:2px; }
+    #banner { height:40px; } #powerWrap { padding-bottom:6px; }
+    #spin { width:44px; height:44px; } #power { height:38px; }
+    .overlay h1 { font-size:28px; } .overlay { gap:10px; padding:16px; } button { padding:11px 22px; font-size:16px; }
+  }
+  /* splash */
+  #splash { position:fixed; inset:0; z-index:40; background:radial-gradient(circle at 50% 40%,#1c5a37,#07130c 70%); display:flex; flex-direction:column; align-items:center; justify-content:center; gap:20px; transition:opacity .35s; }
+  #splash.out { opacity:0; pointer-events:none; }
+  #lgBall { width:104px; height:104px; border-radius:50%; background:radial-gradient(circle at 35% 30%,#555,#0a0a0a 65%); position:relative; box-shadow:0 14px 30px #0008, 0 0 40px #43d17a33; animation:lgroll 1.05s cubic-bezier(.2,.8,.3,1) both, lgglow 2s ease-in-out 1s infinite; }
+  #lgBall b { position:absolute; left:50%; top:50%; width:46px; height:46px; margin:-23px 0 0 -23px; border-radius:50%; background:#f6f6f2; color:#111; font-size:32px; display:flex; align-items:center; justify-content:center; }
+  #lgTitle { font-size:38px; font-weight:900; letter-spacing:3px; display:flex; } #lgTitle span { display:inline-block; opacity:0; animation:lgletter .5s cubic-bezier(.2,1.5,.4,1) both; }
+  #lgSub { color:var(--dim); font-size:14px; letter-spacing:4px; opacity:0; animation:fadeIn .6s ease 1.1s both; }
+  @keyframes lgroll { 0% { transform:translateX(-120vw) rotate(-900deg); } 70% { transform:translateX(0) rotate(0); } 82% { transform:translateY(-22px); } 100% { transform:none; } }
+  @keyframes lgletter { from { opacity:0; transform:translateY(24px) scale(.5); } to { opacity:1; transform:none; } }
+  @keyframes lgglow { 50% { box-shadow:0 14px 30px #0008, 0 0 60px #ffd54a55; } }
+  /* tutorial */
+  #coach { position:absolute; left:10px; right:10px; max-width:520px; margin:0 auto; top:8px; z-index:5; background:rgba(8,24,15,.94); border:2px solid var(--accent); border-radius:12px; padding:6px 8px 6px 10px; display:none; flex-direction:row; align-items:center; gap:8px; pointer-events:none; animation:rise .3s ease both; }
+  #coach.show { display:flex; }
+  #coachTxt { flex:1; font-size:13px; line-height:1.3; text-align:left; } #coachTxt b { color:var(--accent); }
+  #coachBtns { display:flex; flex-direction:column; gap:4px; } #coachBtns button { pointer-events:auto; min-width:64px; min-height:34px; font-size:12px; padding:5px 10px; border-radius:8px; }
+  #stage.coachOn #toast { top:auto; bottom:10px; }
+  .hl { animation:hlpulse 1s ease-in-out infinite; }
+  @keyframes hlpulse { 0%,100% { box-shadow:0 0 0 0 #ffd54aaa; } 50% { box-shadow:0 0 0 7px #ffd54a00; } }
+  #stage.hl::after { content:""; position:absolute; inset:2px; border:3px solid var(--accent); border-radius:16px; pointer-events:none; animation:hlfade 1s ease-in-out infinite; }
+  @keyframes hlfade { 50% { opacity:.25; } }
 </style>
 </head>
 <body>
@@ -80,6 +120,7 @@
   <div id="stage">
     <canvas id="cv"></canvas>
     <div id="toast"></div>
+    <div id="coach"><div id="coachTxt"></div><div id="coachBtns"><button id="coachSkip" class="alt">Saltar</button><button id="coachOk">Seguinte</button></div></div>
   </div>
   <div id="banner">ANÚNCIO BANNER</div>
   <div id="powerWrap">
@@ -97,6 +138,7 @@
   <button id="btnCpu">Jogar a dinheiro</button>
   <button id="btn2p" class="alt">2 Jogadores (amigo)</button>
   <button id="btnProf" class="alt">📋 Missões e perfil</button>
+  <button id="btnTut" class="alt">❓ Como jogar</button>
   <button id="btnShop" class="alt">🛒 Loja</button>
   <button id="btnDaily" class="alt">🎁 Prémio diário</button>
   <button id="btnVideo" class="alt">▶ Vídeo: +150 moedas</button>
@@ -131,6 +173,7 @@
 <div class="overlay" id="adov"><h2>Anúncio (simulado)</h2><p id="adTxt"></p><button id="adClose" class="alt small" disabled>Fechar</button></div>
 <div class="coins" id="coins">🪙 0</div>
 <canvas id="fx"></canvas>
+<div id="splash"><div id="lgBall"><b>8</b></div><div id="lgTitle"></div><div id="lgSub">SINUCA DE BOLSO</div></div>
 <script>
 (() => {
 'use strict';
@@ -179,10 +222,10 @@ const CLOTHS = [
 ];
 // ai: 0 = heurística simples, 1..3 = simula tacadas candidatas (mais candidatas = mais forte)
 const ROOMS = [
-  { name:'Bairro', fee:50,   prize:100,   noise:0.075, ai:0 },
-  { name:'Clube',  fee:250,  prize:500,   noise:0.04,  ai:1 },
-  { name:'Profissional', fee:1000, prize:2000, noise:0.015, ai:2 },
-  { name:'Mestre', fee:5000, prize:10000, noise:0.005, ai:3 },
+  { name:'Bairro', fee:50,   prize:100,   noise:0.075, ai:0, aim:1200 },
+  { name:'Clube',  fee:250,  prize:500,   noise:0.04,  ai:1, aim:600 },
+  { name:'Profissional', fee:1000, prize:2000, noise:0.015, ai:2, aim:380 },
+  { name:'Mestre', fee:5000, prize:10000, noise:0.005, ai:3, aim:240 },
 ];
 const COIN_PACKS = [
   { id:'coins_1000',  coins:1000,  price:'0,99 €' },
@@ -198,8 +241,9 @@ const TITLES = ['Novato', 'Amador', 'Semi-Pro', 'Pro', 'Mestre', 'Lenda'];
 const NOADS_ID = 'remove_ads';
 const SAVE_KEY = 'pool8_save_v1';
 let save = { coins:500, wins:0, losses:0, cues:[0], cue:0, cloths:[0], cloth:0, noAds:false, lastDaily:'', streak:0, matches:0,
-  xp:0, pots:0, winStreak:0, bestStreak:0, missions:{ day:'', prog:{}, done:{} }, mute:false };
+  xp:0, pots:0, winStreak:0, bestStreak:0, missions:{ day:'', prog:{}, done:{} }, mute:false, tutDone:false, firstDone:false };
 try { Object.assign(save, JSON.parse(localStorage.getItem(SAVE_KEY) || '{}')); } catch (e) {}
+if (save.matches > 0) save.firstDone = save.tutDone = true;   // saves antigos: já jogou
 if (!save.missions || typeof save.missions !== 'object') save.missions = { day:'', prog:{}, done:{} };
 const persist = () => { try { localStorage.setItem(SAVE_KEY, JSON.stringify(save)); } catch (e) {} refreshCoins(); };
 const curCue = () => CUES[save.cue] || CUES[0], curCloth = () => CLOTHS[save.cloth] || CLOTHS[0];
@@ -285,11 +329,14 @@ function renderProfile() {
 
 function renderRooms() {
   const box = $('roomList'); box.innerHTML = '';
-  ROOMS.forEach(r => {
+  const first = !save.firstDone;
+  ROOMS.forEach((r, i) => {
+    const locked = first && i > 0, free = first && i === 0;
     const d = document.createElement('div'); d.className = 'card';
-    d.innerHTML = `<div class="t"><b>${r.name}</b><small>Entrada 🪙${r.fee} · Prémio 🪙${r.prize}</small></div><button>Jogar</button>`;
+    d.innerHTML = `<div class="t"><b>${r.name}</b><small>${free ? 'Entrada GRÁTIS · Prémio 🪙' + r.prize + ' · 1.ª partida fácil' : locked ? 'Termina a 1.ª partida para desbloquear' : 'Entrada 🪙' + r.fee + ' · Prémio 🪙' + r.prize}</small></div><button ${locked ? 'disabled' : ''}>${locked ? '🔒' : 'Jogar'}</button>`;
     d.querySelector('button').onclick = async () => {
-      if (save.coins < r.fee) { if (confirm('Sem moedas. Ver um vídeo para ganhar 150 moedas?')) await watchForCoins(); return; }
+      if (locked) return;
+      if (!free && save.coins < r.fee) { if (confirm('Sem moedas. Ver um vídeo para ganhar 150 moedas?')) await watchForCoins(); return; }
       newGame('cpu', r);
     };
     box.appendChild(d);
@@ -347,6 +394,7 @@ let paused = false, gameId = 0, fMul = 1, SIM = false, TS = 1, autoPlay = false;
 let strike = null;          // animação do taco: recua, avança e só então a bola sai
 let slow = 0, cam = { t: 0, fx: W / 2, fy: H / 2 };   // câmara lenta + zoom na última bola
 let shotPw = 0;
+let shotCount = 0, potCount = 0, easyCpu = false, tut = null, tutForce = false;   // 1.ª partida fácil; tutorial
 let sinks = [], floats = [];  // bolas a afundar e textos flutuantes
 
 // ---------- Áudio (tudo sintetizado) ----------
@@ -420,7 +468,8 @@ function rack() {
 // ---------- Início de jogo ----------
 function newGame(m, rm) {
   mode = m; gameId++; paused = false; cpuS = null; strike = null; slow = 0; sinks = []; floats = [];
-  if (m === 'cpu') { room = rm || room; save.coins -= room.fee; persist(); }
+  easyCpu = m === 'cpu' && !save.firstDone;           // 1.ª partida: sala Bairro, grátis e CPU fraco
+  if (m === 'cpu') { room = easyCpu ? ROOMS[0] : (rm || room); if (!easyCpu) save.coins -= room.fee; persist(); }
   rack();
   fMul = curCloth().fr;
   turn = 0; groups = [null, null]; ballInHand = false; firstBreak = true;
@@ -431,6 +480,7 @@ function newGame(m, rm) {
   state = 'aim';
   updateHud();
   startTurn('Abertura! Aponta e arrasta a barra de força para bater.');
+  tut = null; if (!save.tutDone || tutForce) startTut(); tutForce = false;
 }
 
 const isCpuTurn = () => mode === 'cpu' && (turn === 1 || autoPlay);
@@ -445,6 +495,7 @@ function startTurn(msg) {
   spinEl.classList.toggle('disabled', !human);
   nudgeEl.classList.toggle('disabled', !human);
   cpuS = human ? null : { ph: 'wait', t: 0 };
+  if (tut && tut.step === 3 && tut.wait && human && cue.alive) { tut.wait = false; ballInHand = true; showCoach(3); }
   updateHud();
 }
 
@@ -532,11 +583,13 @@ const pName = p => $('n' + p).textContent;
 let lastPrize = 0;
 function endGame(winner, why) {
   state = 'over'; cpuS = null; strike = null;
+  if (tut) finishTut();
   updateHud();
   $('overTitle').textContent = mode === 'cpu' ? (winner === 0 ? '🏆 Ganhaste!' : '😢 Perdeste') : `🏆 ${pName(winner)} ganha!`;
   let prize = 0, extra = '';
   if (mode === 'cpu') {
     const ri = Math.max(0, ROOMS.indexOf(room));
+    save.firstDone = true;
     bump('play');
     if (winner === 0) {
       prize = room.prize; save.coins += prize; save.wins++; save.winStreak++; save.bestStreak = Math.max(save.bestStreak, save.winStreak);
@@ -590,6 +643,7 @@ function launch(angle, pw, pmul, top, side) {
 }
 function fire(angle, pw, call) {
   audio();
+  if (tut && !isCpuTurn()) { if (tut.step < 3) { tut.step = 3; tut.wait = true; hideCoach(); } else finishTut(); }
   if (call === undefined) call = needsCall(turn) ? (calledManual ? called : autoCall(angle)) : null;
   pre = makePre(turn, call);
   shot = newShot();
@@ -599,7 +653,7 @@ function fire(angle, pw, call) {
   // o taco recua (já mostrado pela barra), avança depressa e só no impacto a bola sai (ver frame())
   strike = { ang: angle, pw, pull0: 14 + pw * 70, t: 0, dur: 0.14 - 0.06 * pw, launched: false, fade: 0, cx: cue.x, cy: cue.y,
     args: [angle, pw, cpu ? 1 : curCue().power, cpu ? 0 : Math.max(-1.4, Math.min(1.4, spin.y * sp)), cpu ? 0 : spin.x * sp] };
-  shotPw = pw;
+  shotPw = pw; shotCount++;
   ballInHand = false;
   firstBreak = false;
 }
@@ -677,7 +731,7 @@ function pocket(b, k) {
   else if (shot) { shot.pocketed.push(b.n); shot.pkIdx[b.n] = k; shot.railAfter = true; }
   if (SIM) return;
   const pk = POCKETS[k];
-  sinks.push({ b, x: b.x, y: b.y, k, t: 0 });
+  sinks.push({ b, x: b.x, y: b.y, k, t: 0 }); if (b !== cue) potCount++;
   Snd.tunk(sp); vib(Math.round(15 + shotPw * 45));
   if (b !== cue) addFloat(pk.x + Math.sign(W / 2 - pk.x) * 24, pk.y + (pk.y === MIDY ? 0 : Math.sign(H / 2 - pk.y) * 22), '+1', '#fff', 0.9);
   if (b.n === 8 && pre && pre.cleared && !pre.breakShot) { slow = 1.6; cam.fx = pk.x; cam.fy = pk.y; }   // última bola: câmara lenta
@@ -776,7 +830,7 @@ function simulate(me, ang, pw, pr) {
 }
 
 function cpuDecide() {
-  const me = turn, lvl = room.ai;
+  const me = turn, lvl = easyCpu ? 0 : room.ai;
   if (ballInHand) {
     let bestSpot = null, bs = 1e9;
     const K = lvl === 0 ? 1 : [0, 8, 14, 24][lvl];
@@ -814,8 +868,9 @@ function cpuDecide() {
     for (const b of targets) { const d = Math.hypot(b.x - cue.x, b.y - cue.y); if (d < nd) { nd = d; nb = b; } }
     best = { ang: nb ? Math.atan2(nb.y - cue.y, nb.x - cue.x) : -Math.PI / 2, pw: 0.55, pi: null };
   }
-  const ang = best.ang + (Math.random() - 0.5) * room.noise * 2;
-  const pw = Math.min(1, best.pw * (0.93 + Math.random() * 0.14));
+  let ang = best.ang + (Math.random() - 0.5) * (easyCpu ? 0.3 : room.noise) * 2;
+  let pw = Math.min(1, best.pw * (0.93 + Math.random() * 0.14));
+  if (easyCpu && Math.random() < 0.65) { ang += (Math.random() - 0.5) * 1.4; pw = 0.2 + Math.random() * 0.6; }   // falha de propósito
   let da = ang - aimAngle; while (da > Math.PI) da -= 2 * Math.PI; while (da < -Math.PI) da += 2 * Math.PI;
   cpuS = { ph: 'aim', t: 0, from: aimAngle, da, pw, call: call ? best.pi : null };
   if (call) called = best.pi;
@@ -867,7 +922,7 @@ cv.addEventListener('pointerdown', e => {
   if (ballInHand && Math.hypot(p.x - cue.x, p.y - cue.y) < 34) dragging = 'cue';
   else {
     dragging = 'aim';
-    if (Math.hypot(p.x - cue.x, p.y - cue.y) >= 6) { aimAngle = Math.atan2(p.y - cue.y, p.x - cue.x); prevA = aimAngle; }
+    if (Math.hypot(p.x - cue.x, p.y - cue.y) >= 6) { aimAngle = Math.atan2(p.y - cue.y, p.x - cue.x); prevA = aimAngle; tutCheckAim(); }
     else prevA = null;
   }
 });
@@ -879,12 +934,14 @@ cv.addEventListener('pointermove', e => {
       const nx = Math.max(L + BR, Math.min(Rr - BR, p.x)), ny = Math.max(T + BR, Math.min(B - BR, p.y));
       if (freeSpot(nx, ny)) { cue.x = nx; cue.y = ny; }
     }
+    if (tut && tut.step === 3 && !tut.wait && Math.hypot(cue.x - tut.cx, cue.y - tut.cy) > 25) finishTut('Boa! Já sabes o essencial. Bom jogo!');
   } else {                                       // arrasto relativo: devagar = ajuste fino, depressa = rotação normal
     if (Math.hypot(p.x - cue.x, p.y - cue.y) < 12) return;
     const a = Math.atan2(p.y - cue.y, p.x - cue.x);
     if (prevA == null) { aimAngle = a; prevA = a; return; }
     const da = wrapA(a - prevA); prevA = a;
     aimAngle += da * (Math.abs(da) > 0.06 ? 1 : 0.38);
+    tutCheckAim();
   }
 });
 const endDrag = () => { dragging = null; };
@@ -893,7 +950,7 @@ cv.addEventListener('pointerup', endDrag); cv.addEventListener('pointercancel', 
 // botões de ajuste fino (◀ ▶)
 function nudge(btn, dir) {
   let iv = 0;
-  const go = () => { if (humanAim()) aimAngle += dir * 0.0025; };
+  const go = () => { if (humanAim()) { aimAngle += dir * 0.0025; tutCheckAim(); } };
   btn.addEventListener('pointerdown', e => { audio(); go(); clearInterval(iv); iv = setInterval(go, 35); try { btn.setPointerCapture(e.pointerId); } catch (_) {} });
   ['pointerup', 'pointercancel'].forEach(ev => btn.addEventListener(ev, () => clearInterval(iv)));
 }
@@ -909,6 +966,7 @@ function setSpinFrom(e) {
   if (l > 0.85) { x *= 0.85 / l; y *= 0.85 / l; }
   if (l < 0.12) { x = 0; y = 0; }
   spin = { x, y: -y }; renderSpin();
+  if (tut && tut.step === 1 && Math.hypot(spin.x, spin.y) > 0.3) showCoach(2);
 }
 spinEl.addEventListener('pointerdown', e => { audio(); if (!humanAim()) return; spinEl.setPointerCapture(e.pointerId); spinDrag = true; setSpinFrom(e); });
 spinEl.addEventListener('pointermove', e => { if (spinDrag) setSpinFrom(e); });
@@ -1121,23 +1179,25 @@ function drawCue(angle, pull, alpha, cx, cy) {
   ctx.strokeStyle = '#5ac8ff'; ctx.lineWidth = 6; ctx.beginPath(); ctx.moveTo(sx, sy); ctx.lineTo(sx - dx * 5, sy - dy * 5); ctx.stroke();
   ctx.restore();
 }
+const aimMax = () => mode === 'cpu' && !easyCpu ? room.aim : 1200;   // salas fáceis: linha longa; difíceis: curta
 function drawAim() {
   const p = predict(aimAngle);
   const dx = Math.cos(aimAngle), dy = Math.sin(aimAngle);
+  const am = aimMax(), cut = Math.hypot(p.gx - cue.x, p.gy - cue.y) > am, objLen = Math.max(40, Math.min(150, am * 0.22));
   ctx.save();
   ctx.setLineDash([7, 6]); ctx.strokeStyle = 'rgba(255,255,255,.85)'; ctx.lineWidth = 2;
-  ctx.beginPath(); ctx.moveTo(cue.x + dx * BR, cue.y + dy * BR); ctx.lineTo(p.gx, p.gy); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(cue.x + dx * BR, cue.y + dy * BR); ctx.lineTo(cut ? cue.x + dx * am : p.gx, cut ? cue.y + dy * am : p.gy); ctx.stroke();
   ctx.setLineDash([]);
-  ctx.beginPath(); ctx.arc(p.gx, p.gy, BR, 0, 7); ctx.strokeStyle = 'rgba(255,255,255,.9)'; ctx.stroke();
-  if (p.hit) {
+  if (!cut) { ctx.beginPath(); ctx.arc(p.gx, p.gy, BR, 0, 7); ctx.strokeStyle = 'rgba(255,255,255,.9)'; ctx.stroke(); }
+  if (cut) { /* linha curta: sem previsão */ } else if (p.hit) {
     let nx = p.hit.x - p.gx, ny = p.hit.y - p.gy; const l = Math.hypot(nx, ny); nx /= l; ny /= l;
-    ctx.strokeStyle = 'rgba(255,230,120,.9)'; ctx.beginPath(); ctx.moveTo(p.hit.x, p.hit.y); ctx.lineTo(p.hit.x + nx * 90, p.hit.y + ny * 90); ctx.stroke();
+    ctx.strokeStyle = 'rgba(255,230,120,.9)'; ctx.beginPath(); ctx.moveTo(p.hit.x, p.hit.y); ctx.lineTo(p.hit.x + nx * objLen, p.hit.y + ny * objLen); ctx.stroke();
     const dot = dx * nx + dy * ny; let tx = dx - dot * nx, ty = dy - dot * ny; const tl = Math.hypot(tx, ty);
-    if (tl > 0.02) { tx /= tl; ty /= tl; ctx.strokeStyle = 'rgba(255,255,255,.5)'; ctx.beginPath(); ctx.moveTo(p.gx, p.gy); ctx.lineTo(p.gx + tx * 50, p.gy + ty * 50); ctx.stroke(); }
+    if (tl > 0.02) { tx /= tl; ty /= tl; ctx.strokeStyle = 'rgba(255,255,255,.5)'; ctx.beginPath(); ctx.moveTo(p.gx, p.gy); ctx.lineTo(p.gx + tx * objLen * 0.55, p.gy + ty * objLen * 0.55); ctx.stroke(); }
   } else if (p.axis) {                           // reflexo na tabela
     const rx = p.axis === 'x' ? -dx : dx, ry = p.axis === 'y' ? -dy : dy;
     ctx.setLineDash([4, 6]); ctx.strokeStyle = 'rgba(255,255,255,.4)';
-    ctx.beginPath(); ctx.moveTo(p.gx, p.gy); ctx.lineTo(p.gx + rx * 130, p.gy + ry * 130); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(p.gx, p.gy); ctx.lineTo(p.gx + rx * Math.min(130, am * 0.25), p.gy + ry * Math.min(130, am * 0.25)); ctx.stroke();
   }
   ctx.restore();
   drawCue(aimAngle, 14 + power * 70, 1, cue.x, cue.y);
@@ -1223,9 +1283,43 @@ function frame(now) {
   requestAnimationFrame(frame);
 }
 
+// ---------- Tutorial interativo (1.ª vez) ----------
+const TUT = [
+  { txt: '<b>1/4 Apontar</b> — arrasta na mesa (devagar = fino) ou usa ◀ ▶', hl: ['stage', 'nudge'] },
+  { txt: '<b>2/4 Efeito</b> — toca no círculo: cima = segue, baixo = recua', hl: ['spin'] },
+  { txt: '<b>3/4 Força</b> — arrasta a barra para a direita e larga', hl: ['power'] },
+  { txt: '<b>4/4 Bola na mão</b> — após uma falta, arrasta a branca para onde quiseres', hl: ['stage'] },
+];
+const HL_IDS = ['stage', 'nudge', 'spin', 'power'];
+const clearHl = () => HL_IDS.forEach(id => $(id).classList.remove('hl'));
+function hideCoach() { $('coach').classList.remove('show'); $('stage').classList.remove('coachOn'); clearHl(); }
+function startTut() { tut = { step: 0, wait: false }; showCoach(0); }
+function showCoach(i) {
+  tut.step = i;
+  $('coachTxt').innerHTML = TUT[i].txt; $('coach').classList.add('show'); $('stage').classList.add('coachOn');
+  clearHl(); TUT[i].hl.forEach(id => $(id).classList.add('hl'));
+  tut.a0 = aimAngle; tut.cx = cue.x; tut.cy = cue.y;
+  $('coachOk').style.display = i >= 2 ? 'none' : '';
+}
+function finishTut(msg) { tut = null; hideCoach(); save.tutDone = true; persist(); if (msg) toast(msg); }
+function tutCheckAim() { if (tut && tut.step === 0 && Math.abs(wrapA(aimAngle - tut.a0)) > 0.1) showCoach(1); }
+$('coachSkip').onclick = () => finishTut();
+$('coachOk').onclick = () => { if (tut && tut.step < 2) showCoach(tut.step + 1); };
+
+// ---------- Arranque ----------
+(() => {
+  const lt = $('lgTitle');
+  '8 BALL POOL'.split('').forEach((c, i) => { const sp = document.createElement('span'); sp.textContent = c === ' ' ? '\u00a0' : c; sp.style.animationDelay = (0.5 + i * 0.06) + 's'; lt.appendChild(sp); });
+  let done = false;
+  const hide = () => { if (done) return; done = true; $('splash').classList.add('out'); setTimeout(() => $('splash').remove(), 400); };
+  setTimeout(hide, 1900);
+  $('splash').addEventListener('pointerdown', () => { audio(); hide(); });
+})();
+
 // ---------- Menus ----------
 $('btnCpu').onclick = () => { audio(); renderRooms(); open('rooms'); };
 $('btn2p').onclick = () => { audio(); newGame('2p'); };
+$('btnTut').onclick = () => { audio(); tutForce = true; newGame('2p'); };
 $('btnProf').onclick = () => { renderProfile(); open('prof'); };
 $('btnShop').onclick = () => { renderShop(); open('shop'); };
 $('btnDaily').onclick = claimDaily;
@@ -1233,7 +1327,7 @@ $('btnVideo').onclick = watchForCoins;
 $('btnDouble').onclick = async () => { if (lastPrize && await Monet.rewarded()) { save.coins += lastPrize; persist(); $('btnDouble').style.display = 'none'; toast(`Prémio dobrado! +${lastPrize}`); lastPrize = 0; } };
 // intersticial a cada 3 partidas contra o CPU
 const afterMatch = async fn => { if (mode === 'cpu' && save.matches % 3 === 0) await Monet.interstitial(); fn(); };
-const toMenu = () => { gameId++; cpuS = null; strike = null; slow = 0; sinks = []; floats = []; paused = false; state = 'menu'; open('menu'); updateHud(); };
+const toMenu = () => { if (tut) { tut = null; hideCoach(); } gameId++; cpuS = null; strike = null; slow = 0; sinks = []; floats = []; paused = false; state = 'menu'; open('menu'); updateHud(); };
 $('btnAgain').onclick = () => afterMatch(() => { if (mode === 'cpu') { renderRooms(); open('rooms'); } else newGame(mode); });
 $('btnMenu').onclick = () => afterMatch(toMenu);
 
@@ -1241,7 +1335,7 @@ $('btnMenu').onclick = () => afterMatch(toMenu);
 $('menuBtn').onclick = () => {
   if (state === 'menu' || state === 'over') return open('menu');
   paused = true;
-  $('pauseMsg').textContent = mode === 'cpu' ? `Se abandonares, perdes a entrada (🪙${room.fee}) e conta como derrota.` : 'Partida entre amigos em pausa.';
+  $('pauseMsg').textContent = mode === 'cpu' ? (easyCpu ? 'Partida de treino grátis: podes abandonar sem perder nada.' : `Se abandonares, perdes a entrada (🪙${room.fee}) e conta como derrota.`) : 'Partida entre amigos em pausa.';
   open('pause');
 };
 $('btnResume').onclick = () => { paused = false; $('pause').classList.remove('show'); };
@@ -1249,7 +1343,7 @@ const updateMuteBtn = () => { $('muteBtn').textContent = Snd.muted ? '🔇' : '�
 $('muteBtn').onclick = () => { Snd.init(); Snd.setMuted(!Snd.muted); updateMuteBtn(); };
 updateMuteBtn();
 $('btnQuit').onclick = () => {
-  if (mode === 'cpu') { save.losses++; save.matches++; save.winStreak = 0; bump('play'); persist(); }
+  if (mode === 'cpu' && !easyCpu) { save.losses++; save.matches++; save.winStreak = 0; bump('play'); persist(); }
   toMenu();
 };
 document.addEventListener('touchmove', e => { if (!e.target.closest('.grid, .overlay')) e.preventDefault(); }, { passive: false });
@@ -1262,7 +1356,7 @@ window.__pool = {
   get state() { return state; }, get balls() { return balls; }, get turn() { return turn; }, get groups() { return groups; },
   fire, newGame, judge, simulate, rooms: ROOMS, save, Snd,
   get sinks() { return sinks.length; }, get floats() { return floats.map(f => f.txt); }, get confetti() { return confetti.length; }, get slow() { return slow; },
-  get firstBreak() { return firstBreak; }, set firstBreak(v) { firstBreak = !!v; },
+  get shots() { return shotCount; }, get pots() { return potCount; }, get tut() { return tut && tut.step; }, get ballInHand() { return ballInHand; }, get easy() { return easyCpu; }, get firstBreak() { return firstBreak; }, set firstBreak(v) { firstBreak = !!v; },
   set auto(v) { autoPlay = !!v; }, set speed(v) { TS = v; }, get room() { return room; }, set room(r) { room = r; },
 };
 })();
