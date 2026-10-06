@@ -1,13 +1,13 @@
 # Textos para a ficha da App Store
 
-Troca `[NOME]` pelo nome final do jogo (ver PUBLICAR.md, ponto 1).
+O nome final é **Cue Legends**.
 Limites da Apple: nome 30 caracteres, subtítulo 30, palavras-chave 100, descrição 4000.
 
 ---
 
 ## Português (Portugal)
 
-**Nome:** [NOME]: Bilhar 8 Bolas
+**Nome:** Cue Legends: Bilhar 8 Bolas
 
 **Subtítulo:** Bilhar clássico no teu bolso
 
@@ -18,7 +18,7 @@ Novos desafios todas as semanas! Mete a 8 com estilo e sobe ao topo.
 ```
 Pega no taco e mostra quem manda na mesa!
 
-[NOME] é bilhar de 8 bolas feito para o telemóvel: física realista,
+Cue Legends é bilhar de 8 bolas feito para o telemóvel: física realista,
 controlos precisos com o dedo e partidas rápidas para jogar em qualquer lado,
 mesmo sem internet.
 
@@ -58,7 +58,7 @@ Ads are shown only after the ATT and consent prompts.
 
 ## English (U.S.) (recomendado: chega a muito mais países)
 
-**Name:** [NAME]: 8-Ball Billiards
+**Name:** Cue Legends: 8-Ball Billiards
 
 **Subtitle:** Classic pool in your pocket
 
@@ -69,7 +69,7 @@ New challenges every week! Sink the 8 in style and climb to the top.
 ```
 Grab your cue and rule the table!
 
-[NAME] is 8-ball pool built for your phone: realistic physics, precise
+Cue Legends is 8-ball pool built for your phone: realistic physics, precise
 touch controls and quick matches you can play anywhere, even offline.
 
 🎱 PLAY LIKE A PRO

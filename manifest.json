@@ -1,7 +1,7 @@
 {
-  "name": "8 Ball Pool",
-  "short_name": "8 Ball",
-  "description": "Sinuca de bolso (8 ball): partidas, desafios, torneios e prémios diários.",
+  "name": "Cue Legends",
+  "short_name": "Cue Legends",
+  "description": "Cue Legends: sinuca de bolso com partidas, desafios, torneios e recompensas diárias.",
   "lang": "pt",
   "id": "./index.html",
   "start_url": "./index.html",

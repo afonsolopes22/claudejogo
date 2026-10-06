@@ -9,19 +9,19 @@ Ordem recomendada. Marca cada caixa quando estiver feito.
 - [ ] `git checkout main` → `git merge mega-jogo` → `git push origin main` → `git checkout mega-jogo`
 - [ ] Confirmar que `afonsolopes22.github.io/claudejogo/` mostra a versão nova
 
-## 1. ⚠️ Mudar o nome do jogo
-"8 Ball Pool" é marca registada da Miniclip, o jogo de bilhar mais famoso da App Store.
-Usar esse nome dá rejeição ou queixa por marca.
-- [ ] Escolher um nome próprio. Ideias: **Bilhar Mestre**, **Pool Royale 8**, **Taco de Ouro**, **Cue Legends**
-- [ ] Pesquisar o nome na App Store para ver se já existe
-- [ ] Trocar o nome no `index.html` (título e menu), no `manifest.json` e no `capacitor.config.json` (`appName`)
-- [ ] Trocar `appId` (`com.TEUNOME.pool8`) por algo teu, ex. `com.afonsolopes.bilhar`. Depois de publicado não se pode mudar.
+## 1. Nome do jogo (feito: Cue Legends)
+"8 Ball Pool" é marca registada da Miniclip, por isso o jogo chama-se **Cue Legends**.
+- [x] Nome trocado em `index.html`, `manifest.json`, `capacitor.config.json` (`appName`), `package.json` e `privacy.html`
+- [x] `appId` = `com.afonsolopes.cuelegends` (depois de publicado não se pode mudar)
+- [ ] Pesquisar "Cue Legends" na App Store para confirmar que o nome está livre
+- [ ] Em `privacy.html` preencher `[NOME DO PROGRAMADOR]` e `[DATA]`
+- Nota técnica: as chaves internas `pool8_save_v1` e `pool8_debug` mantêm-se para não apagar os progressos já guardados.
 
 ## 2. Evitar a classificação de "jogo de azar"
-Entradas e prémios em moedas podem ser classificados como "jogo de azar simulado".
+Inscrições e recompensas em moedas podiam ser classificadas como "jogo de azar simulado".
 Isso sobe a idade mínima e afasta jogadores.
-- [ ] Botão "Jogar a dinheiro" → "Jogar"
-- [ ] Evitar palavras de casino (apostas, dinheiro, casino) nos textos
+- [x] Botão "Jogar a dinheiro" → "Jogar"
+- [x] Sem palavras de casino/aposta nos textos ("Entrada/Prémio" → "Inscrição/Recompensa"; "Vermelho Casino" → "Vermelho Rubi")
 - [ ] As moedas nunca podem ser trocadas por dinheiro real (já é assim)
 
 ## 3. Testar num telemóvel real
@@ -40,8 +40,6 @@ Correções antes de publicar:
    e a legenda "Mesa Neon" para não prometer o que não mostra.
 3. Ícone 1024 sem moldura quadrada fina (o iOS arredonda os cantos).
 4. Guarda em tools/ os scripts que geram ícones e capturas.
-5. Muda "Jogar a dinheiro" para "Jogar" e o nome do jogo para <NOME NOVO>.
-6. Adiciona no menu um link "Privacidade" para privacy.html.
 Commit e pára.
 ```
 

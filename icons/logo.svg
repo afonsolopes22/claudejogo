@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" >
+<linearGradient id="lc" gradientUnits="userSpaceOnUse" x1="20" y1="80" x2="80" y2="20"><stop offset="0" stop-color="#3a210f"/><stop offset=".3" stop-color="#3a210f"/><stop offset=".31" stop-color="#ffcf3f"/><stop offset=".35" stop-color="#ffcf3f"/><stop offset=".36" stop-color="#e3b878"/><stop offset="1" stop-color="#f6e3b0"/></linearGradient>
+<radialGradient id="lb" cx="35%" cy="30%" r="80%"><stop offset="0" stop-color="#6e6e6e"/><stop offset=".65" stop-color="#101010"/><stop offset="1" stop-color="#000"/></radialGradient>
+<linearGradient id="lr" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fff2a8"/><stop offset=".5" stop-color="#ffcf3f"/><stop offset="1" stop-color="#b8860b"/></linearGradient>
+<polygon points="22.3,82.3 81,21 79,19 17.7,77.7" fill="url(#lc)"/>
+<circle cx="80.4" cy="19.6" r="2.3" fill="#5ac8ff"/>
+<circle cx="50" cy="52" r="26" fill="url(#lb)" stroke="url(#lr)" stroke-width="2.6"/>
+<circle cx="50" cy="52" r="13" fill="#f6f6f2"/>
+<polygon points="50.00,43.40 52.29,49.44 58.75,49.76 53.71,53.81 55.41,60.04 50.00,56.50 44.59,60.04 46.29,53.81 41.25,49.76 47.71,49.44" fill="#111"/>
+<ellipse cx="41" cy="38.5" rx="7" ry="4" fill="#fff" opacity=".35" transform="rotate(-30 41 38.5)"/></svg>

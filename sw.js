@@ -1,11 +1,11 @@
-// Service worker do 8 Ball Pool: a app (HTML, manifest e ícones) fica em cache e funciona offline.
+// Service worker do Cue Legends: a app (HTML, manifest e ícones) fica em cache e funciona offline.
 // Estratégia: devolve logo o que está em cache e atualiza em segundo plano (a nova versão entra na visita seguinte).
 // A chave da cache ignora a query (?debug, ?utm=...), por isso todas as entradas se atualizam da mesma forma.
 // Muda CACHE quando publicares uma versão nova para forçar a limpeza da cache antiga.
-const CACHE = 'pool8-v4';
+const CACHE = 'cuelegends-v5';
 const ASSETS = [
   './', './index.html', './manifest.json',
-  './icons/icon-192.png', './icons/icon-512.png', './icons/icon-maskable-512.png', './icons/apple-touch-icon.png', './icons/shot-menu.png', './icons/shot-game.png',
+  './icons/icon-192.png', './icons/icon-512.png', './icons/icon-maskable-512.png', './icons/apple-touch-icon.png', './icons/shot-menu.png', './icons/shot-game.png', './icons/logo.svg', './privacy.html',
 ];
 
 self.addEventListener('install', e => {

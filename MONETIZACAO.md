@@ -1,10 +1,10 @@
-# Monetização e publicação (8 Ball Pool)
+# Monetização e publicação (Cue Legends)
 
 Este documento descreve como a monetização funciona **no código atual** e o que falta fazer para publicar na App Store.
 Tudo o que decide anúncios e compras está concentrado no objeto `Monet` em `index.html`.
 Na web os anúncios e as compras são **simulados**; dentro da app (Capacitor) usam AdMob e compras Apple.
 
-> **Moedas são só virtuais.** Não há dinheiro real em prémios, e convém manter assim (evita as regras de jogo a dinheiro).
+> **Moedas são só virtuais.** Não há dinheiro real em recompensas, e convém manter assim (evita as regras de jogo a dinheiro).
 
 ---
 
@@ -19,7 +19,7 @@ Na web os anúncios e as compras são **simulados**; dentro da app (Capacitor) u
 | Quando aparece | **só** nos botões do ecrã final (nunca a meio de partida, na pausa, no 2 jogadores nem a meio de um torneio) | `afterMatch()` → `Monet.maybeInterstitial()` |
 | Quem não vê anúncios | quem comprou "Remover anúncios" | `save.noAds` |
 | Vídeos de +150 moedas | 6 por dia (janela de 24 h) | `Monet.AD.videosPerDay` |
-| Prémio dobrado | bónus máximo +500, 8 por dia | `Monet.AD.doubleCap`, `doublesPerDay` |
+| Recompensa dobrada | bónus máximo +500, 8 por dia | `Monet.AD.doubleCap`, `doublesPerDay` |
 
 Vídeos com recompensa (a fonte principal): dobrar prémio no fim da partida/desafio, +150 moedas, **segunda oportunidade**
 num desafio (+2 tacadas, uma vez por tentativa) e **baú grátis** de 4 em 4 horas (média ≈ 320 moedas), aberto com um vídeo.
@@ -64,7 +64,7 @@ Números ajustáveis: `MISSIONS`, `DAILY`, `CHEST`, `levelBonus()`, `lvlNeed()`,
 
 ## 3. O que só tu podes fazer
 1. **Mac com Xcode** + conta **Apple Developer** (99 $/ano).
-2. `npm install`, muda o `appId` em `capacitor.config.json` (hoje `com.TEUNOME.pool8`), `npx cap add ios`.
+2. `npm install`, muda o `appId` em `capacitor.config.json` (já `com.afonsolopes.cuelegends`), `npx cap add ios`.
 3. **AdMob** (admob.google.com): cria a app e 3 blocos (banner, intersticial, recompensa).
    Troca os IDs de **TESTE** em `Monet.ids` (`index.html`) pelos teus e acrescenta o `GADApplicationIdentifier` (ID da app AdMob) ao `Info.plist`.
    Nunca cliques nos teus próprios anúncios reais: dá ban.
@@ -78,7 +78,7 @@ Números ajustáveis: `MISSIONS`, `DAILY`, `CHEST`, `levelBonus()`, `lvlNeed()`,
 - [ ] Os 5 produtos criados na App Store Connect (`coins_1000`, `coins_6000`, `coins_15000`, `remove_ads`, `starter_pack`) e aprovados/“Ready to Submit”.
 - [ ] `appId` real e *bundle id* coerente com o Xcode.
 - [ ] Hooks de teste desligados: `window.__pool` só existe com `?debug` no URL ou `localStorage.pool8_debug`. Confirma que o build nativo não os ativa (idealmente remove o bloco `window.__pool = {...}`).
-- [ ] `sw.js`: o service worker não é registado no app nativo (só em `http(s)` na web). Muda `CACHE` (`pool8-v1`) quando publicares uma nova versão web.
+- [ ] `sw.js`: o service worker não é registado no app nativo (só em `http(s)` na web). Muda `CACHE` (`cuelegends-v5`) quando publicares uma nova versão web.
 
 **Privacidade e legal (exigido pela Apple)**
 - [ ] Política de privacidade com URL público.
@@ -86,7 +86,7 @@ Números ajustáveis: `MISSIONS`, `DAILY`, `CHEST`, `levelBonus()`, `lvlNeed()`,
 - [ ] Pedido ATT: `NSUserTrackingUsageDescription` no `Info.plist` + chamada de autorização antes de personalizar anúncios.
 - [ ] Consentimento (UMP/GDPR) para utilizadores no EEE/Reino Unido, se usares anúncios personalizados.
 - [ ] `SKAdNetworkItems` no `Info.plist` (lista do AdMob).
-- [ ] Classificação etária: responde com atenção às perguntas sobre jogos de azar simulados — o jogo tem entradas e prémios em moedas **virtuais**; confirma nas diretrizes da Apple (5.3) como se aplica.
+- [ ] Classificação etária: responde com atenção às perguntas sobre jogos de azar simulados — o jogo tem inscrições e recompensas em moedas **virtuais**; confirma nas diretrizes da Apple (5.3) como se aplica.
 - [ ] Botão "Restaurar compras" visível (já existe, na loja → Moedas).
 
 **Loja**
