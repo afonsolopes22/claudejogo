@@ -69,7 +69,7 @@ Números ajustáveis: `MISSIONS`, `DAILY`, `CHEST`, `levelBonus()`, `lvlNeed()`,
    Troca os IDs de **TESTE** em `Monet.ids` (`index.html`) pelos teus e acrescenta o `GADApplicationIdentifier` (ID da app AdMob) ao `Info.plist`.
    Nunca cliques nos teus próprios anúncios reais: dá ban.
 4. **App Store Connect**: cria os 5 produtos da tabela acima (IDs exatamente iguais) e preenche contrato de apps pagas + dados bancários e fiscais.
-5. Ícone: arrasta `store-assets/icon-1024.png` para o AppIcon do Xcode. Orientação: só vertical (`UISupportedInterfaceOrientations`).
+5. Ícone: arrasta `store-assets/icon-1024.png` para o AppIcon do Xcode. Orientação: só horizontal — `UISupportedInterfaceOrientations` com `UIInterfaceOrientationLandscapeLeft` e `UIInterfaceOrientationLandscapeRight`.
 6. `npm run ios`, testa com sandbox/TestFlight (compras, restaurar, anúncios de teste) e submete para revisão.
 
 ## 4. Checklist final de publicação

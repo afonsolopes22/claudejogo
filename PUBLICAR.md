@@ -64,7 +64,7 @@ Precisas de um Mac (pode ser emprestado ou alugado na nuvem, ex. MacinCloud).
   ```
 - [ ] No Xcode: em Signing & Capabilities, escolher a tua equipa (conta Apple Developer)
 - [ ] Adicionar a capability **In-App Purchase**
-- [ ] Em Deployment Info: só **iPhone** e só **Portrait**
+- [ ] Em Deployment Info: só **iPhone** e só **Landscape** (no Xcode marcar apenas **Landscape Left** e **Landscape Right**; desmarcar Portrait e Upside Down)
 - [ ] No `Info.plist`, acrescentar:
   - `GADApplicationIdentifier`: o ID da APP no AdMob (`ca-app-pub-XXXX~YYYY`)
   - `NSUserTrackingUsageDescription`: "Usamos este identificador para mostrar anúncios mais relevantes e manter o jogo gratuito."
