@@ -155,6 +155,14 @@
   .shopc .t b { font-size:15px; } .shopc .t small { line-height:1.3; }
   #offerCard { width:100%; max-width:340px; flex:none; }
   .oldprice { text-decoration:line-through; opacity:.6; margin-right:8px; }
+  /* fase 5 */
+  .mgrid .wide { grid-column:span 2; }
+  #btnChest.ready::after { content:""; position:absolute; top:6px; right:8px; width:10px; height:10px; border-radius:50%; background:#ff4a3a; box-shadow:0 0 8px #ff4a3a; }
+  #chestBox { font-size:96px; line-height:1; color:var(--accent); filter:drop-shadow(0 8px 14px #0008); }
+  #chestBox .ic { width:1em; height:1em; stroke-width:1.3; }
+  #chestBox.shake { animation:chestshake 1s ease-in-out infinite; }
+  @keyframes chestshake { 0%,100% { transform:rotate(0); } 15% { transform:rotate(-7deg); } 30% { transform:rotate(6deg); } 45% { transform:rotate(-4deg); } 60% { transform:rotate(3deg); } }
+  #chestPrize { font-size:36px; font-weight:900; color:var(--accent); min-height:44px; }
 </style>
 </head>
 <body>
@@ -204,8 +212,9 @@
     <button id="btnProf" class="alt"><svg class="ic"><use href="#i-list"/></svg> Missões</button>
     <button id="btnShop" class="alt"><svg class="ic"><use href="#i-cart"/></svg> Loja</button>
     <button id="btnDaily" class="alt"><svg class="ic"><use href="#i-gift"/></svg> Diário</button>
+    <button id="btnChest" class="alt"><svg class="ic"><use href="#i-gift"/></svg> Baú grátis</button>
     <button id="btnVideo" class="alt"><svg class="ic"><use href="#i-video"/></svg> +150</button>
-    <button id="btnTut" class="alt"><svg class="ic"><use href="#i-help"/></svg> Como jogar</button>
+    <button id="btnTut" class="alt wide"><svg class="ic"><use href="#i-help"/></svg> Como jogar</button>
   </div>
 </div>
 <div class="overlay" id="rooms"><h1>Escolhe a sala</h1><div class="grid" id="roomList"></div><button class="alt small" data-close="rooms">Voltar</button></div>
@@ -219,6 +228,8 @@
 <div class="overlay" id="offer"><h1>Pacote Inicial</h1><p>Oferta única para começares em grande!</p>
   <div class="card shopc" id="offerCard" style="--rc:#ffb02e"><div class="t"><span class="tag" style="color:#ffb02e">Oferta única</span><b>🪙 2500 moedas</b><small>+ Taco Carbono (Raro) + pano Turquesa (Raro)</small></div></div>
   <button id="btnOfferBuy"><span class="oldprice">2,99 €</span>0,99 €</button><button class="alt small" id="btnOfferNo">Agora não</button></div>
+<div class="overlay" id="chest"><h1>Baú grátis</h1><div id="chestBox"><svg class="ic"><use href="#i-gift"/></svg></div><p id="chestMsg"></p><div id="chestPrize"></div>
+  <button id="btnChestOpen">▶ Abrir (vídeo)</button><button class="alt small" data-close="chest">Voltar</button></div>
 <div class="overlay" id="daily"><h1>Prémio diário</h1><p id="dailyMsg"></p><div class="dgrid" id="dailyGrid"></div><button id="btnClaim">Receber</button><button class="alt small" data-close="daily">Voltar</button></div>
 <div class="overlay" id="ach"><h1>Conquistas</h1><p id="achSum"></p><div class="grid" id="achList"></div><button class="alt small" id="achBack">Voltar</button></div>
 <div class="overlay" id="chal"><h1>Desafios</h1><p id="chalSum"></p><div class="cgrid" id="chalGrid"></div><button class="alt small" data-close="chal">Voltar</button></div>
@@ -240,6 +251,7 @@
   <div id="prizeCnt"></div>
   <p id="overMsg"></p>
   <button id="btnDouble">▶ Dobrar prémio (vídeo)</button>
+  <button id="btnRetryAd" style="display:none">▶ Segunda oportunidade: +2 tacadas</button>
   <button id="btnAgain">Jogar outra vez</button>
   <button id="btnMenu" class="alt">Menu</button>
 </div>
@@ -319,9 +331,9 @@ const COIN_PACKS = [
   { id:'coins_15000', coins:15000, price:'9,99 €' },
 ];
 const MISSIONS = [
-  { id:'play', key:'play', txt:'Joga 3 partidas',  goal:3,  reward:150 },
-  { id:'win',  key:'win',  txt:'Ganha 2 partidas', goal:2,  reward:250 },
-  { id:'pot',  key:'pot',  txt:'Mete 15 bolas',    goal:15, reward:200 },
+  { id:'play', key:'play', txt:'Joga 3 partidas',  goal:3,  reward:100 },
+  { id:'win',  key:'win',  txt:'Ganha 2 partidas', goal:2,  reward:150 },
+  { id:'pot',  key:'pot',  txt:'Mete 15 bolas',    goal:15, reward:150 },
 ];
 const DAILY = [100, 150, 200, 300, 400, 500, 1500];   // calendário de 7 dias; o 7.º é o prémio grande
 const TOUR = { fee: 500, lvl: 4, rounds: [
@@ -365,6 +377,8 @@ const CHALLENGES = [
   { cue:[228,408], goal:[5,4,12,6], avoid:[8], par:3, max:5, balls:[[5,137,675],[4,109,517],[12,257,399],[6,147,354],[10,215,537],[11,142,487],[9,209,202],[8,330,452]] },   // 30
 /*CHAL_END*/
 ];
+const CHEST_MS = 4 * 3600 * 1000;      // baú grátis de 4 em 4 horas (aberto com vídeo)
+const CHEST = [ { w: 60, min: 120, max: 240 }, { w: 28, min: 250, max: 450 }, { w: 10, min: 600, max: 900 }, { w: 2, min: 2000, max: 2000 } ];
 const TITLES = ['Novato', 'Amador', 'Semi-Pro', 'Pro', 'Mestre', 'Lenda'];
 const NOADS_ID = 'remove_ads';
 const STARTER_ID = 'starter_pack';   // oferta única (novo produto; criar na App Store Connect)
@@ -372,8 +386,14 @@ const SAVE_KEY = 'pool8_save_v1';
 let save = { coins:500, wins:0, losses:0, cues:[0], cue:0, cloths:[0], cloth:0, noAds:false, lastDaily:'', streak:0, matches:0,
   xp:0, pots:0, winStreak:0, bestStreak:0, missions:{ day:'', prog:{}, done:{} }, mute:false, tutDone:false, firstDone:false,
   chal:{}, tour:null, ach:{}, dailyBest:0, bestShot:0, tourWins:0, perfect:0,
-  tables:[0], table:0, offerSeen:false, starter:false };
+  tables:[0], table:0, offerSeen:false, starter:false,
+  playSec:0, adCount:0, lastAdAt:0, vid:{ start:0, n:0, dbl:0 }, chestAt:0, xpVer:0 };
 try { Object.assign(save, JSON.parse(localStorage.getItem(SAVE_KEY) || '{}')); } catch (e) {}
+if (!save.xpVer) {   // converte o XP guardado para a nova curva mantendo nível e progresso
+  let l = 1, x = save.xp; while (x >= 100 + 50 * (l - 1)) { x -= 100 + 50 * (l - 1); l++; }
+  let nx = 0; for (let i = 1; i < l; i++) nx += 150 + 75 * (i - 1);
+  save.xp = Math.round(nx + x / (100 + 50 * (l - 1)) * (150 + 75 * (l - 1))); save.xpVer = 2;
+}
 if (save.matches > 0) save.firstDone = save.tutDone = true;
 if (save.tour && save.tour.live) { save.tour = null; save.losses++; save.matches++; save.winStreak = 0; }   // recarregou a meio de uma ronda = abandono   // saves antigos: já jogou
 if (!save.chal || typeof save.chal !== 'object') save.chal = {};
@@ -382,6 +402,7 @@ if (!save.missions || typeof save.missions !== 'object') save.missions = { day:'
 const persist = () => { try { localStorage.setItem(SAVE_KEY, JSON.stringify(save)); } catch (e) {} refreshCoins(); checkAch(); };
 const curCue = () => CUES[save.cue] || CUES[0], curCloth = () => CLOTHS[save.cloth] || CLOTHS[0], curTable = () => TABLES[save.table] || TABLES[0];
 if (!Array.isArray(save.tables)) save.tables = [0];
+if (!save.vid || typeof save.vid !== 'object') save.vid = { day: '', n: 0 };
 
 // ---------- Monetização (anúncios + compras) ----------
 // Na web usa simulação. Dentro da app (Capacitor) usa AdMob e compras nativas.
@@ -402,14 +423,52 @@ const Monet = {
     try { const A = window.Capacitor.Plugins.AdMob; await A.initialize({ initializeForTesting:true }); if (!save.noAds) A.showBanner({ adId:this.ids.banner, position:'BOTTOM_CENTER', margin:0 }); } catch (e) {}
     try { window.CdvPurchase.store.register([{ id:NOADS_ID, type:CdvPurchase.ProductType.NON_CONSUMABLE, platform:CdvPurchase.Platform.APPLE_APPSTORE }, { id:STARTER_ID, type:CdvPurchase.ProductType.NON_CONSUMABLE, platform:CdvPurchase.Platform.APPLE_APPSTORE }, ...COIN_PACKS.map(p => ({ id:p.id, type:CdvPurchase.ProductType.CONSUMABLE, platform:CdvPurchase.Platform.APPLE_APPSTORE }))]); await CdvPurchase.store.initialize(); } catch (e) {}
   },
+  // ---- política de anúncios (tudo o que decide quando mostrar anúncios está aqui) ----
+  AD: { minPlaySec: 300, everyMatches: 3, minGapMs: 90000, videosPerDay: 6, doublesPerDay: 8, doubleCap: 500 },
+  noteMatch() { save.adCount = (save.adCount || 0) + 1; },
+  canInterstitial() {   // nunca nos primeiros 5 min de jogo, no máximo 1 a cada 3 partidas, nunca a meio de uma partida/torneio
+    return !save.noAds && mode !== '2p' && !save.tour && (save.playSec || 0) >= this.AD.minPlaySec
+      && (save.adCount || 0) >= this.AD.everyMatches && Date.now() - (save.lastAdAt || 0) >= this.AD.minGapMs;
+  },
+  async maybeInterstitial() {   // só chamado a partir dos botões do ecrã final
+    if (!this.canInterstitial()) return false;
+    await this.interstitial(); save.lastAdAt = Date.now(); save.adCount = 0; persist(); return true;
+  },
+  videosLeft() { const now = Date.now(); if (!save.vid.start || now - save.vid.start >= 864e5) save.vid = { start: now, n: 0, dbl: 0 }; return Math.max(0, this.AD.videosPerDay - save.vid.n); },
+  doublesLeft() { this.videosLeft(); return Math.max(0, this.AD.doublesPerDay - (save.vid.dbl || 0)); },
+  doubleBonus(prize) { return Math.min(prize, this.AD.doubleCap); },
+  async watchCoins() {   // vídeo -> +150 moedas, limite diário
+    if (this.videosLeft() <= 0) { toast('Limite diário de vídeos atingido. Volta amanhã!'); return false; }
+    if (!(await this.rewarded())) return false;
+    save.vid.n++; save.coins += 150; persist(); toast(`+150 moedas! (${this.videosLeft()} vídeos restantes hoje)`); return true;
+  },
+  // ---- compras: cada produto sabe o que concede; uma de cada vez; não-consumíveis não se repetem ----
+  grants: {},
+  async purchase(id) {
+    const g = this.grants[id]; if (!g || (g.once && g.has())) return false;
+    if (!(await this.buy(id))) return false;
+    if (g.once && g.has()) return false;   // outra chamada já concedeu enquanto esperávamos
+    g.apply(); persist(); return true;
+  },
+  _adBusy: false,
   async interstitial() {
-    if (save.noAds) return;
-    if (!this.native) return this.fake('Anúncio intersticial', 3);
-    try { const A = window.Capacitor.Plugins.AdMob; await A.prepareInterstitial({ adId:this.ids.interstitial }); await A.showInterstitial(); } catch (e) {}
+    if (save.noAds || this._adBusy) return;
+    this._adBusy = true;
+    try {
+      if (!this.native) return await this.fake('Anúncio intersticial', 3);
+      try { const A = window.Capacitor.Plugins.AdMob; await A.prepareInterstitial({ adId:this.ids.interstitial }); await A.showInterstitial(); } catch (e) {}
+    } finally { this._adBusy = false; }
   },
   async rewarded() { // devolve true se o utilizador viu o vídeo até ao fim
-    if (!this.native) return this.fake('Vídeo com recompensa', 5);
-    try { const A = window.Capacitor.Plugins.AdMob; await A.prepareRewardVideoAd({ adId:this.ids.rewarded }); const r = await A.showRewardVideoAd(); return !!r; } catch (e) { return false; }
+    if (this._adBusy) return false;
+    this._adBusy = true;
+    try {
+      let ok = false;
+      if (!this.native) ok = await this.fake('Vídeo com recompensa', 5);
+      else { try { const A = window.Capacitor.Plugins.AdMob; await A.prepareRewardVideoAd({ adId:this.ids.rewarded }); ok = !!(await A.showRewardVideoAd()); } catch (e) { ok = false; } }
+      if (ok) save.lastAdAt = Date.now();   // acabou de ver um anúncio: não mostrar um intersticial logo a seguir
+      return ok;
+    } finally { this._adBusy = false; }
   },
   busy: false,
   async buy(id) { // devolve true se a compra foi concluída (uma de cada vez)
@@ -423,20 +482,30 @@ const Monet = {
   },
   async restore() {
     if (!this.native) return toast('Compras restauradas (simulação).');
-    try { await window.CdvPurchase.store.restorePurchases(); toast('Compras restauradas.'); } catch (e) { toast('Não foi possível restaurar.'); }
+    try {
+      const st = window.CdvPurchase.store; await st.restorePurchases();
+      const owns = id => { try { return !!(st.owned ? st.owned(id) : st.get(id).owned); } catch (e) { return false; } };
+      if (owns(NOADS_ID) && !save.noAds) { save.noAds = true; hideBannerIfPaid(); }
+      if (owns(STARTER_ID) && !save.starter) applyStarter(false);
+      persist(); toast('Compras restauradas.');
+    } catch (e) { toast('Não foi possível restaurar.'); }
   },
 };
+COIN_PACKS.forEach(pk => { Monet.grants[pk.id] = { apply: () => { save.coins += pk.coins; toast('Compra concluída!'); } }; });
+Monet.grants[NOADS_ID] = { once: true, has: () => save.noAds, apply: () => { save.noAds = true; hideBannerIfPaid(); } };
+Monet.grants[STARTER_ID] = { once: true, has: () => save.starter, apply: () => applyStarter() };
 function hideBannerIfPaid() { $('banner').classList.toggle('hide', save.noAds); resize(); if (save.noAds && Monet.native) try { window.Capacitor.Plugins.AdMob.removeBanner(); } catch (e) {} }
 
 // ---------- Nível, XP e missões ----------
 const dayKey = (d = new Date()) => d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
-const lvlNeed = l => 100 + 50 * (l - 1);
+const lvlNeed = l => 150 + 75 * (l - 1);            // XP para passar do nível l ao l+1 (níveis mais lentos = desbloqueios duram mais)
+const levelBonus = l => Math.min(600, 100 + 25 * (l - 1));   // moedas ao chegar ao nível l (limitado para não inflacionar)
 function lvlInfo() { let l = 1, x = save.xp; while (x >= lvlNeed(l)) { x -= lvlNeed(l); l++; } return { l, x, need: lvlNeed(l) }; }
 const titleOf = l => TITLES[Math.min(TITLES.length - 1, Math.floor((l - 1) / 3))];
 function addXp(n) { // devolve texto se subiu de nível
   const before = lvlInfo().l; save.xp += n; const after = lvlInfo().l;
   if (after <= before) return '';
-  let bonus = 0; for (let l = before + 1; l <= after; l++) bonus += 100 * l;
+  let bonus = 0; for (let l = before + 1; l <= after; l++) bonus += levelBonus(l);
   save.coins += bonus;
   const unl = [...ROOMS.filter(r => r.lvl > before && r.lvl <= after).map(r => 'sala ' + r.name), ...CUES.filter(c => c.lvl > before && c.lvl <= after).map(c => c.name)];
   if (TOUR.lvl > before && TOUR.lvl <= after) unl.push('Torneio');
@@ -479,12 +548,15 @@ function checkAch() {
   for (const a of ACH) { if (save.ach[a.id]) continue; const [c, g] = a.prog(); if (c >= g) { save.ach[a.id] = 1; save.coins += a.r; got.push(a); } }
   const n = got.length;
   if (n > 2) achQueue.push({ name: n + ' conquistas', r: got.reduce((x, a) => x + a.r, 0) }); else achQueue.push(...got);
+  if (econSim) achQueue.length = 0;
   if (n) { try { localStorage.setItem(SAVE_KEY, JSON.stringify(save)); } catch (e) {} refreshCoins(); showAch(); }
 }
 function ensureMissions() { const d = dayKey(); if (save.missions.day !== d) save.missions = { day: d, prog: {}, done: {} }; }
 function bump(key, n = 1) { ensureMissions(); save.missions.prog[key] = (save.missions.prog[key] || 0) + n; }
 
 function refreshCoins() {
+  try { $('btnVideo').innerHTML = `<svg class="ic"><use href="#i-video"/></svg> +150 (${Monet.videosLeft()})`; } catch (e) {}
+  if (typeof updateChest === 'function' && $('btnChest')) try { updateChest(); } catch (e) {}
   const li = lvlInfo();
   $('coinN').textContent = save.coins;
   $('lvlInfo').textContent = `Nível ${li.l} · ${titleOf(li.l)} · Vitórias: ${save.wins} · Derrotas: ${save.losses}`;
@@ -587,14 +659,14 @@ function renderShop() {
       fn: () => { if (lock) return; if (own) save.table = i; else if (save.coins >= t.price) { save.coins -= t.price; save.tables.push(i); save.table = i; } else return toast('Moedas insuficientes'); persist(); renderShop(); } });
   });
   if (shopTab === 'coins') {
-    if (!save.starter && (save.offerSeen || save.matches >= 3)) card('#ffb02e', 'Pacote inicial', '🪙2500 + Taco Carbono + pano Turquesa · oferta única', '0,99 €', async () => { if (await buyStarter()) renderShop(); });
-    COIN_PACKS.forEach(p => card('#ffd54a', `🪙 ${p.coins}`, 'Pacote de moedas', p.price, async () => { if (await Monet.buy(p.id)) { save.coins += p.coins; persist(); toast('Compra concluída!'); } }));
-    card('#fff', 'Remover anúncios', 'Sem banners nem intersticiais', save.noAds ? 'Comprado' : '2,99 €', async () => { if (await Monet.buy(NOADS_ID)) { save.noAds = true; persist(); hideBannerIfPaid(); renderShop(); } }, save.noAds);
+    if (!save.starter && (save.offerSeen || save.matches >= 3)) card('#ffb02e', 'Pacote inicial', '🪙2500 + Taco Carbono + pano Turquesa · oferta única', '0,99 €', async () => { if (await Monet.purchase(STARTER_ID)) renderShop(); });
+    COIN_PACKS.forEach(p => card('#ffd54a', `🪙 ${p.coins}`, 'Pacote de moedas', p.price, async () => { await Monet.purchase(p.id); }));
+    card('#fff', 'Remover anúncios', 'Sem banners nem intersticiais', save.noAds ? 'Comprado' : '2,99 €', async () => { if (await Monet.purchase(NOADS_ID)) renderShop(); }, save.noAds);
     card(null, 'Restaurar compras', 'Obrigatório pela Apple', 'Restaurar', () => Monet.restore());
   }
 }
 document.querySelectorAll('#shopTabs button').forEach(b => b.onclick = () => { shopTab = b.dataset.t; renderShop(); });
-async function watchForCoins() { if (await Monet.rewarded()) { save.coins += 150; persist(); toast('+150 moedas!'); } }
+const watchForCoins = () => Monet.watchCoins();
 function claimDaily() {
   const d = dailyInfo();
   if (!d.next) return toast('Já recebeste o prémio de hoje. Volta amanhã!');
@@ -623,6 +695,7 @@ let paused = false, gameId = 0, fMul = 1, SIM = false, TS = 1, autoPlay = false;
 let strike = null;          // animação do taco: recua, avança e só então a bola sai
 let slow = 0, cam = { t: 0, fx: W / 2, fy: H / 2 };   // câmara lenta + zoom na última bola
 let shotPw = 0;
+let chalSecond = false, humanSkill = null, econSim = false, chalCountPending = false, chalAdBusy = false;
 let mstat = { pots: 0, run: 0, maxRun: 0, opp: 0 }, chalIdx = 0, chalShots = 0, chalCur = null, overNext = 0;
 let shotCount = 0, potCount = 0, easyCpu = false, tut = null, tutForce = false;   // 1.ª partida fácil; tutorial
 let sinks = [], floats = [];  // bolas a afundar e textos flutuantes
@@ -824,6 +897,7 @@ let lastPrize = 0;
 function scheduleOver(won, prize, canDouble) {
   lastPrize = canDouble ? prize : 0;
   $('btnDouble').style.display = canDouble && prize ? '' : 'none';
+  if (mode !== 'chal') $('btnRetryAd').style.display = 'none';
   const id = gameId;
   setTimeout(() => {
     if (id !== gameId || state !== 'over') return;
@@ -833,6 +907,27 @@ function scheduleOver(won, prize, canDouble) {
     if (prize) countUp($('prizeCnt'), prize, 1100, '🪙 +');
   }, 700);
 }
+function settleCpu(winner) {   // economia de uma partida contra o CPU (usada pelo jogo e pela simulação de economia)
+  let prize = 0, extra = '';
+  const ri = Math.max(0, ROOMS.indexOf(room));
+  save.firstDone = true;
+  bump('play');
+  if (winner === 0) {
+    prize = room.prize; save.coins += prize; save.wins++; save.winStreak++; save.bestStreak = Math.max(save.bestStreak, save.winStreak);
+    if (!easyCpu && mstat.opp === 0) save.perfect++;
+    bump('win'); extra = addXp((room.xp || 40 + 20 * ri) + 3 * mstat.pots + 5 * mstat.maxRun);
+  } else { save.losses++; save.winStreak = 0; extra = addXp(10 + 2 * mstat.pots); }
+  if (room.tour && save.tour) {
+    save.tour.live = false;
+    if (winner === 0) {
+      save.tour.round++;
+      if (save.tour.round >= TOUR.rounds.length) { save.tour = null; save.tourWins++; extra += ' Campeão do torneio!'; }
+      else { extra += ' Passas à próxima ronda!'; }
+    } else { save.tour = null; extra += ' Eliminado do torneio.'; }
+  }
+  save.matches++; Monet.noteMatch(); persist();
+  return { prize, extra };
+}
 function endGame(winner, why) {
   state = 'over'; cpuS = null; strike = null;
   if (tut) finishTut();
@@ -840,25 +935,7 @@ function endGame(winner, why) {
   $('overTitle').textContent = mode === 'cpu' ? (winner === 0 ? '🏆 Ganhaste!' : '😢 Perdeste') : `🏆 ${pName(winner)} ganha!`;
   $('btnAgain').textContent = 'Jogar outra vez'; $('btnMenu').textContent = 'Menu';
   let prize = 0, extra = '';
-  if (mode === 'cpu') {
-    const ri = Math.max(0, ROOMS.indexOf(room));
-    save.firstDone = true;
-    bump('play');
-    if (winner === 0) {
-      prize = room.prize; save.coins += prize; save.wins++; save.winStreak++; save.bestStreak = Math.max(save.bestStreak, save.winStreak);
-      if (!easyCpu && mstat.opp === 0) save.perfect++;
-      bump('win'); extra = addXp((room.xp || 40 + 20 * ri) + 3 * mstat.pots + 5 * mstat.maxRun);
-    } else { save.losses++; save.winStreak = 0; extra = addXp(10 + 2 * mstat.pots); }
-    if (room.tour && save.tour) {
-      save.tour.live = false;
-      if (winner === 0) {
-        save.tour.round++;
-        if (save.tour.round >= TOUR.rounds.length) { save.tour = null; save.tourWins++; extra += ' Campeão do torneio!'; }
-        else { extra += ' Passas à próxima ronda!'; $('btnAgain').textContent = 'Próxima ronda ▶'; }
-      } else { save.tour = null; extra += ' Eliminado do torneio.'; }
-    }
-    save.matches++; persist();
-  }
+  if (mode === 'cpu') { const r = settleCpu(winner); prize = r.prize; extra = r.extra; if (room.tour && save.tour) $('btnAgain').textContent = 'Próxima ronda ▶'; }
   $('overMsg').textContent = why + (prize ? ` Ganhaste 🪙${prize}.` : '') + extra;
   scheduleOver(mode === 'cpu' ? winner === 0 : true, prize, true);
 }
@@ -897,7 +974,7 @@ function chalText(L) {
   return t;
 }
 function startChal(i, override) {
-  const L = override || CHALLENGES[i]; chalCur = L; chalIdx = i; chalShots = 0;
+  const L = override || CHALLENGES[i]; chalCur = L; chalIdx = i; chalShots = 0; chalSecond = false; $('btnRetryAd').style.display = 'none';
   mode = 'chal'; gameId++; paused = false; cpuS = null; strike = null; slow = 0; sinks = []; floats = []; easyCpu = false; tut = null; hideCoach();
   balls = []; cue = newCue(L.cue[0], L.cue[1]); balls.push(cue);
   L.balls.forEach(b => balls.push(mk(b[0], b[1], b[2])));
@@ -915,13 +992,17 @@ function resolveChal() {
   if (chalShots >= L.max) return chalEnd(false, 0, 'Sem tacadas.');
   updateHud(); startTurn(`Tacada ${chalShots + 1}/${L.max}`);
 }
+function settleChal(idx, stars) {   // economia de um desafio concluído (jogo + simulação)
+  const prev = save.chal[idx] || 0; let coins = 0, extra = '';
+  if (stars > prev) { coins = (stars - prev) * 25 + (prev === 0 ? 25 : 0); save.coins += coins; save.chal[idx] = stars; extra = addXp(10 * (stars - prev)); }
+  return { coins, extra };
+}
 function chalEnd(win, stars, why) {
   state = 'over'; cpuS = null; strike = null;
   updateHud();
   let coins = 0, extra = '';
   if (win) {
-    const prev = save.chal[chalIdx] || 0;
-    if (stars > prev) { coins = (stars - prev) * 25 + (prev === 0 ? 25 : 0); save.coins += coins; save.chal[chalIdx] = stars; extra = addXp(10 * (stars - prev)); }
+    const r = settleChal(chalIdx, stars); coins = r.coins; extra = r.extra;
     $('overTitle').textContent = '⭐'.repeat(stars) + '☆'.repeat(3 - stars) + ' Nível ' + (chalIdx + 1);
     $('overMsg').textContent = `Concluído em ${chalShots} tacada(s) (par ${chalCur.par}).` + extra;
   } else {
@@ -932,7 +1013,10 @@ function chalEnd(win, stars, why) {
   $('btnAgain').textContent = win && chalIdx < CHALLENGES.length - 1 ? 'Próximo nível ▶' : 'Repetir';
   $('btnMenu').textContent = 'Níveis';
   persist();
-  scheduleOver(win, coins, false);
+  const retry = !win && why === 'Sem tacadas.' && !chalSecond;
+  chalCountPending = retry; if (!retry) Monet.noteMatch();   // com segunda oportunidade pendente, só conta se o jogador a recusar
+  $('btnRetryAd').style.display = retry ? '' : 'none';
+  scheduleOver(win, coins, win && coins > 0);
 }
 function renderChal() {
   const g = $('chalGrid'); g.innerHTML = '';
@@ -1159,7 +1243,7 @@ function simulate(me, ang, pw, pr) {
 }
 
 function cpuDecide() {
-  const me = turn, lvl = easyCpu ? 0 : room.ai;
+  const me = turn, sk = autoPlay && me === 0 && humanSkill ? humanSkill : null, lvl = sk ? sk.ai : easyCpu ? 0 : room.ai;
   if (ballInHand) {
     let bestSpot = null, bs = 1e9;
     const K = lvl === 0 ? 1 : [0, 8, 14, 24][lvl];
@@ -1197,7 +1281,7 @@ function cpuDecide() {
     for (const b of targets) { const d = Math.hypot(b.x - cue.x, b.y - cue.y); if (d < nd) { nd = d; nb = b; } }
     best = { ang: nb ? Math.atan2(nb.y - cue.y, nb.x - cue.x) : -Math.PI / 2, pw: 0.55, pi: null };
   }
-  let ang = best.ang + (Math.random() - 0.5) * (easyCpu ? 0.3 : room.noise) * 2;
+  let ang = best.ang + (Math.random() - 0.5) * (sk ? sk.noise : easyCpu ? 0.3 : room.noise) * 2;
   let pw = Math.min(1, best.pw * (0.93 + Math.random() * 0.14));
   if (easyCpu && Math.random() < 0.65) { ang += (Math.random() - 0.5) * 1.4; pw = 0.2 + Math.random() * 0.6; }   // falha de propósito
   let da = ang - aimAngle; while (da > Math.PI) da -= 2 * Math.PI; while (da < -Math.PI) da += 2 * Math.PI;
@@ -1598,7 +1682,8 @@ function drawFloats() {
 
 let last = performance.now(), acc = 0, settleT = 0;
 function frame(now) {
-  const dt = Math.min(0.033, (now - last) / 1000) * TS; last = now; Snd.n = 0;
+  const rdt = Math.min(0.033, (now - last) / 1000), dt = rdt * TS; last = now; Snd.n = 0;
+  if (!paused && (state === 'aim' || state === 'moving')) save.playSec += rdt;   // tempo de jogo real (para a regra dos 5 min sem anúncios)
   if (!paused) {
     if (strike) {                                // taco: avança depressa; a bola sai no impacto
       const s = strike; s.t += dt;
@@ -1679,20 +1764,54 @@ $('coachOk').onclick = () => { if (tut && tut.step < 2) showCoach(tut.step + 1);
   $('splash').addEventListener('pointerdown', () => { audio(); hide(); });
 })();
 
+// ---------- Baú grátis (de 4 em 4 h, aberto com vídeo) ----------
+const chestLeft = () => Math.max(0, Math.min(save.chestAt - Date.now(), CHEST_MS));   // se o relógio recuar, nunca passa de 4 h
+const fmtMs = ms => { const t = Math.ceil(ms / 1000), h = Math.floor(t / 3600), m = Math.floor(t % 3600 / 60), sc = t % 60; return (h ? h + ':' + String(m).padStart(2, '0') : m) + ':' + String(sc).padStart(2, '0'); };
+function updateChest() {
+  const left = chestLeft();
+  $('btnChest').classList.toggle('ready', left === 0);
+  if ($('chest').classList.contains('show')) {
+    $('chestBox').classList.toggle('shake', left === 0);
+    if (!$('chestPrize').textContent) $('chestMsg').textContent = left ? 'Próximo baú em ' + fmtMs(left) : 'Baú pronto! Vê um vídeo para o abrir.';
+    $('btnChestOpen').disabled = left > 0;
+  }
+}
+function rollChest() {
+  let r = Math.random() * CHEST.reduce((a, c) => a + c.w, 0);
+  for (const c of CHEST) { if ((r -= c.w) < 0) return c.min + Math.floor(Math.random() * (c.max - c.min + 1)); }
+  return CHEST[0].min;
+}
+$('btnChest').onclick = () => { $('chestPrize').textContent = ''; open('chest'); updateChest(); };
+$('btnChestOpen').onclick = async () => {
+  if (chestLeft() > 0) return;
+  if (!(await Monet.rewarded())) return toast('Vídeo não concluído');
+  if (chestLeft() > 0) return;
+  const amt = rollChest(); save.coins += amt; save.chestAt = Date.now() + CHEST_MS; persist();
+  $('chestMsg').textContent = 'Recebeste:'; countUp($('chestPrize'), amt, 900, '🪙 +'); confettiBurst(); Snd.win(); updateChest();
+};
+setInterval(updateChest, 1000);
+$('btnRetryAd').onclick = async () => {   // segunda oportunidade num desafio: +2 tacadas, uma vez por tentativa
+  if (mode !== 'chal' || chalSecond || state !== 'over' || chalAdBusy) return;
+  chalAdBusy = true; const id = gameId;
+  try { if (!(await Monet.rewarded())) return; } finally { chalAdBusy = false; }
+  if (id !== gameId || state !== 'over' || mode !== 'chal' || chalSecond) return;   // saiu do desafio durante o anúncio
+  chalCountPending = false; chalSecond = true; chalCur = Object.assign({}, chalCur, { max: chalCur.max + 2 });
+  $('btnRetryAd').style.display = 'none'; $('over').classList.remove('show');
+  state = 'aim'; updateHud(); startTurn(`+2 tacadas! Tacada ${chalShots + 1}/${chalCur.max}`);
+};
+
 // ---------- Pacote inicial (oferta única, depois da 3.ª partida) ----------
-async function buyStarter() {
-  if (save.starter || !(await Monet.buy(STARTER_ID))) return false;
-  if (save.starter) return false;
-  save.coins += 2500;
+function applyStarter(withCoins = true) {
+  if (withCoins) save.coins += 2500;
   const ki = CUES.findIndex(x => x.name === 'Taco Carbono'); if (ki >= 0 && !save.cues.includes(ki)) save.cues.push(ki);
   const ci = CLOTHS.findIndex(x => x.name === 'Turquesa'); if (ci >= 0 && !save.cloths.includes(ci)) save.cloths.push(ci);
-  save.starter = true; persist(); toast('Pacote inicial recebido!'); return true;
+  save.starter = true; toast(withCoins ? 'Pacote inicial recebido!' : 'Pacote inicial restaurado.');
 }
 function maybeOffer() {
   if (state !== 'menu' || save.starter || save.offerSeen || save.matches < 3 || !$('menu').classList.contains('show')) return;
   save.offerSeen = true; persist(); open('offer');
 }
-$('btnOfferBuy').onclick = async () => { if (await buyStarter()) open('menu'); };
+$('btnOfferBuy').onclick = async () => { if (await Monet.purchase(STARTER_ID)) open('menu'); };
 $('btnOfferNo').onclick = () => open('menu');
 
 // ---------- Menus ----------
@@ -1716,9 +1835,15 @@ $('btnTourGo').onclick = () => {
   playTourRound();
 };
 $('btnVideo').onclick = watchForCoins;
-$('btnDouble').onclick = async () => { if (lastPrize && await Monet.rewarded()) { save.coins += lastPrize; persist(); $('btnDouble').style.display = 'none'; toast(`Prémio dobrado! +${lastPrize}`); lastPrize = 0; } };
+$('btnDouble').onclick = async () => {
+  if (!lastPrize) return;
+  if (Monet.doublesLeft() <= 0) return toast('Limite diário de prémios dobrados atingido');
+  const b = Monet.doubleBonus(lastPrize);
+  if (!(await Monet.rewarded()) || !lastPrize) return;
+  save.vid.dbl = (save.vid.dbl || 0) + 1; save.coins += b; persist(); $('btnDouble').style.display = 'none'; toast(`Prémio dobrado! +${b}`); lastPrize = 0;
+};
 // intersticial a cada 3 partidas contra o CPU
-const afterMatch = async fn => { if (mode === 'cpu' && save.matches % 3 === 0) await Monet.interstitial(); fn(); };
+const afterMatch = async fn => { if (chalCountPending) { chalCountPending = false; Monet.noteMatch(); } await Monet.maybeInterstitial(); fn(); };
 const toMenu = () => { if (tut) { tut = null; hideCoach(); } gameId++; cpuS = null; strike = null; slow = 0; sinks = []; floats = []; paused = false; state = 'menu'; open('menu'); updateHud(); setTimeout(maybeOffer, 600); };
 function overAgain() {
   if (mode === 'chal') return startChal(overNext);
@@ -1758,7 +1883,14 @@ if (/[?&]debug\b/.test(location.search) || (() => { try { return !!localStorage.
   get mode() { return mode; }, get chalShots() { return chalShots; }, get tour() { return save.tour; },
   get sinks() { return sinks.length; }, get floats() { return floats.map(f => f.txt); }, get confetti() { return confetti.length; }, get slow() { return slow; },
   get shots() { return shotCount; }, get pots() { return potCount; }, get tut() { return tut && tut.step; }, get ballInHand() { return ballInHand; }, get easy() { return easyCpu; }, get firstBreak() { return firstBreak; }, set firstBreak(v) { firstBreak = !!v; },
-  set auto(v) { autoPlay = !!v; }, set speed(v) { TS = v; }, get room() { return room; }, set room(r) { room = r; },
+  set auto(v) { autoPlay = !!v; },
+  econ: {   // simulação de economia: usa as mesmas funções do jogo
+    set on(v) { econSim = !!v; },
+    match(ri, win, ms, easy, tourRoom) { mode = 'cpu'; room = tourRoom || ROOMS[ri]; easyCpu = !!easy; mstat = ms; if (!easy && !tourRoom) save.coins -= room.fee; return settleCpu(win ? 0 : 1); },
+    chal: (i, stars) => settleChal(i, stars),
+    addXp, ensureMissions, bump, claimDaily, dailyInfo, lvlInfo, settleCpu,
+    resetClock() { save.vid = { day: '', n: 0 }; save.missions = { day: '', prog: {}, done: {} }; },
+  }, set skill(v) { humanSkill = v; }, Monet, CHEST, CHEST_MS, DAILY, MISSIONS, rollChest, chestLeft, set speed(v) { TS = v; }, get room() { return room; }, set room(r) { room = r; },
 };
 })();
 </script>
