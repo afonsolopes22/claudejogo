@@ -7,6 +7,11 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#0b1d14">
 <title>8 Ball Pool</title>
+<meta name="description" content="Sinuca de bolso (8 ball): partidas, desafios, torneios e prémios diários.">
+<meta name="apple-mobile-web-app-title" content="8 Ball Pool">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
 <style>
   :root { --bg:#0b1d14; --panel:#12301f; --accent:#ffd54a; --txt:#f2f7f4; --dim:#8fb5a0; }
   * { box-sizing:border-box; -webkit-tap-highlight-color:transparent; user-select:none; -webkit-user-select:none; }
@@ -561,7 +566,7 @@ function refreshCoins() {
   $('coinN').textContent = save.coins;
   $('lvlInfo').textContent = `Nível ${li.l} · ${titleOf(li.l)} · Vitórias: ${save.wins} · Derrotas: ${save.losses}`;
 }
-const open = id => { document.querySelectorAll('.overlay').forEach(o => { if (o.id !== 'adov') o.classList.remove('show'); }); $(id).classList.add('show'); refreshCoins(); };
+const open = id => { document.querySelectorAll('.overlay').forEach(o => { if (o.id !== 'adov') o.classList.remove('show'); }); $(id).classList.add('show'); refreshCoins(); wake(); };
 document.querySelectorAll('[data-close]').forEach(b => b.onclick = () => open('menu'));
 
 function renderProfile() {
@@ -696,6 +701,7 @@ let strike = null;          // animação do taco: recua, avança e só então a
 let slow = 0, cam = { t: 0, fx: W / 2, fy: H / 2 };   // câmara lenta + zoom na última bola
 let shotPw = 0;
 let chalSecond = false, humanSkill = null, econSim = false, chalCountPending = false, chalAdBusy = false;
+let loopOn = true, idleN = 0, holdN = 0;   // loop de desenho: pára quando nada se mexe (ver loopActive/wake)
 let mstat = { pots: 0, run: 0, maxRun: 0, opp: 0 }, chalIdx = 0, chalShots = 0, chalCur = null, overNext = 0;
 let shotCount = 0, potCount = 0, easyCpu = false, tut = null, tutForce = false;   // 1.ª partida fácil; tutorial
 let sinks = [], floats = [];  // bolas a afundar e textos flutuantes
@@ -770,6 +776,7 @@ function rack() {
 
 // ---------- Início de jogo ----------
 function newGame(m, rm) {
+  wake();
   mode = m; gameId++; paused = false; cpuS = null; strike = null; slow = 0; sinks = []; floats = [];
   easyCpu = m === 'cpu' && !save.firstDone;           // 1.ª partida: sala Bairro, grátis e CPU fraco
   if (m === 'cpu') { room = easyCpu ? ROOMS[0] : (rm || room); if (!easyCpu) save.coins -= room.fee; persist(); }
@@ -789,6 +796,7 @@ function newGame(m, rm) {
 const isCpuTurn = () => mode === 'cpu' && (turn === 1 || autoPlay);
 
 function startTurn(msg) {
+  wake();
   state = 'aim'; power = 0; setPower(0);
   spin = { x: 0, y: 0 }; renderSpin();
   called = null; calledManual = false;
@@ -974,6 +982,7 @@ function chalText(L) {
   return t;
 }
 function startChal(i, override) {
+  wake();
   const L = override || CHALLENGES[i]; chalCur = L; chalIdx = i; chalShots = 0; chalSecond = false; $('btnRetryAd').style.display = 'none';
   mode = 'chal'; gameId++; paused = false; cpuS = null; strike = null; slow = 0; sinks = []; floats = []; easyCpu = false; tut = null; hideCoach();
   balls = []; cue = newCue(L.cue[0], L.cue[1]); balls.push(cue);
@@ -1055,6 +1064,7 @@ function launch(angle, pw, pmul, top, side) {
   cue.dx = c; cue.dy = s; cue.touched = false; cue.top = top; cue.side = side;
 }
 function fire(angle, pw, call) {
+  wake();
   audio();
   if (tut && !isCpuTurn()) { if (tut.step < 3) { tut.step = 3; tut.wait = true; hideCoach(); } else finishTut(); }
   if (call === undefined) call = needsCall(turn) ? (calledManual ? called : autoCall(angle)) : null;
@@ -1364,8 +1374,9 @@ cv.addEventListener('pointerup', endDrag); cv.addEventListener('pointercancel', 
 function nudge(btn, dir) {
   let iv = 0;
   const go = () => { if (humanAim()) { aimAngle += dir * 0.0025; tutCheckAim(); } };
-  btn.addEventListener('pointerdown', e => { audio(); go(); clearInterval(iv); iv = setInterval(go, 35); try { btn.setPointerCapture(e.pointerId); } catch (_) {} });
-  ['pointerup', 'pointercancel'].forEach(ev => btn.addEventListener(ev, () => clearInterval(iv)));
+  let held = false;
+  btn.addEventListener('pointerdown', e => { audio(); go(); clearInterval(iv); iv = setInterval(go, 35); if (!held) { held = true; holdN++; } try { btn.setPointerCapture(e.pointerId); } catch (_) {} });
+  ['pointerup', 'pointercancel'].forEach(ev => btn.addEventListener(ev, () => { clearInterval(iv); if (held) { held = false; holdN--; } }));
 }
 nudge($('nL'), -1); nudge($('nR'), 1);
 
@@ -1456,6 +1467,7 @@ function resize() {
   cv.width = Math.round(r.width * dpr); cv.height = Math.round(r.height * dpr);
   const s = Math.min(r.width / W, r.height / H);
   view = { s, ox: (r.width - W * s) / 2, oy: (r.height - H * s) / 2, dpr };
+  wake();
 }
 window.addEventListener('resize', resize);
 if (window.ResizeObserver) new ResizeObserver(resize).observe($('stage'));
@@ -1681,9 +1693,8 @@ function drawFloats() {
 }
 
 let last = performance.now(), acc = 0, settleT = 0;
-function frame(now) {
-  const rdt = Math.min(0.033, (now - last) / 1000), dt = rdt * TS; last = now; Snd.n = 0;
-  if (!paused && (state === 'aim' || state === 'moving')) save.playSec += rdt;   // tempo de jogo real (para a regra dos 5 min sem anúncios)
+function drawFrame(now) {
+  const dt = Math.min(0.033, (now - last) / 1000) * TS; last = now; Snd.n = 0;
   if (!paused) {
     if (strike) {                                // taco: avança depressa; a bola sai no impacto
       const s = strike; s.t += dt;
@@ -1728,8 +1739,22 @@ function frame(now) {
   if (strike) drawCue(strike.ang, strike.pull, strike.launched ? 1 - strike.fade / 0.18 : 1, strike.cx, strike.cy);
   drawFloats();
   ctx.restore();
-  requestAnimationFrame(frame);
 }
+function frame(now) {
+  try { drawFrame(now); } catch (e) { console.error(e); }   // uma exceção num frame não pode matar o loop
+  if (loopActive()) idleN = 0; else idleN++;
+  if (idleN < 3) requestAnimationFrame(frame); else loopOn = false;   // nada a animar e ninguém a tocar: pára até haver um evento (wake)
+}
+function loopActive() {
+  if (paused) return false;
+  return state === 'moving' || state === 'resolving' || !!strike || sinks.length > 0 || floats.length > 0 || cam.t > 0.01 || slow > 0
+    || !!cpuS || (state === 'aim' && isCpuTurn()) || !!dragging || powDrag || spinDrag || (holdN > 0 && state === 'aim');
+}
+function wake() { idleN = 0; if (!loopOn) { loopOn = true; last = performance.now(); requestAnimationFrame(frame); } }
+['pointerdown', 'pointermove', 'pointerup', 'pointercancel'].forEach(ev => document.addEventListener(ev, wake, true));
+document.addEventListener('visibilitychange', wake); window.addEventListener('focus', wake);
+// tempo de jogo real (para a regra dos 5 min sem anúncios): por relógio, porque o loop pára quando o jogador está a pensar
+setInterval(() => { if (!paused && (state === 'aim' || state === 'moving') && document.visibilityState !== 'hidden') save.playSec += 1; }, 1000);
 
 // ---------- Tutorial interativo (1.ª vez) ----------
 const TUT = [
@@ -1844,7 +1869,7 @@ $('btnDouble').onclick = async () => {
 };
 // intersticial a cada 3 partidas contra o CPU
 const afterMatch = async fn => { if (chalCountPending) { chalCountPending = false; Monet.noteMatch(); } await Monet.maybeInterstitial(); fn(); };
-const toMenu = () => { if (tut) { tut = null; hideCoach(); } gameId++; cpuS = null; strike = null; slow = 0; sinks = []; floats = []; paused = false; state = 'menu'; open('menu'); updateHud(); setTimeout(maybeOffer, 600); };
+const toMenu = () => { if (tut) { tut = null; hideCoach(); } gameId++; cpuS = null; strike = null; slow = 0; sinks = []; floats = []; paused = false; state = 'menu'; open('menu'); updateHud(); wake(); setTimeout(maybeOffer, 600); };
 function overAgain() {
   if (mode === 'chal') return startChal(overNext);
   if (mode === 'cpu' && room.tour && save.tour) return playTourRound();
@@ -1860,7 +1885,7 @@ $('menuBtn').onclick = () => {
   $('pauseMsg').textContent = mode === 'chal' ? 'Sair do desafio (não custa nada).' : mode === 'cpu' && room.tour ? 'Se abandonares, ficas eliminado do torneio.' : mode === 'cpu' ? (easyCpu ? 'Partida de treino grátis: podes abandonar sem perder nada.' : `Se abandonares, perdes a entrada (🪙${room.fee}) e conta como derrota.`) : 'Partida entre amigos em pausa.';
   open('pause');
 };
-$('btnResume').onclick = () => { paused = false; $('pause').classList.remove('show'); };
+$('btnResume').onclick = () => { paused = false; $('pause').classList.remove('show'); wake(); };
 const updateMuteBtn = () => { $('muteBtn').innerHTML = `<svg class="ic"><use href="#i-${Snd.muted ? 'mute' : 'sound'}"/></svg>`; };
 $('muteBtn').onclick = () => { Snd.init(); Snd.setMuted(!Snd.muted); updateMuteBtn(); };
 updateMuteBtn();
@@ -1875,10 +1900,11 @@ document.addEventListener('contextmenu', e => e.preventDefault());
 try { if (screen.orientation && screen.orientation.lock) screen.orientation.lock('portrait').catch(() => {}); } catch (e) {}
 
 rack(); resize(); updateHud(); refreshCoins(); hideBannerIfPaid(); Monet.init();
+if ('serviceWorker' in navigator && /^https?:$/.test(location.protocol) && !Monet.native) navigator.serviceWorker.register('sw.js').catch(() => {});
 requestAnimationFrame(frame);
 if (/[?&]debug\b/.test(location.search) || (() => { try { return !!localStorage.getItem('pool8_debug'); } catch (e) { return false; } })()) window.__pool = {
   get state() { return state; }, get balls() { return balls; }, get turn() { return turn; }, get groups() { return groups; },
-  fire, newGame, judge, simulate, rooms: ROOMS, save, Snd, CUES, CLOTHS, TABLES, maybeOffer, aimMax, startChal, CHALLENGES, TOUR, ACH, lvlInfo,
+  fire, newGame, judge, simulate, rooms: ROOMS, save, Snd, CUES, CLOTHS, TABLES, maybeOffer, aimMax, confettiBurst, startChal, CHALLENGES, TOUR, ACH, lvlInfo,
   sb: { snap, restoreSnap, get cue() { return cue; }, runSim(ang, pw) { const sv = shot; SIM = true; shot = newShot(); launch(ang, pw, 1, 0, 0); let n = 0; do { step(SUB); } while (++n < 2400 && anyMoving()); const r = shot; shot = sv; SIM = false; return r; } },
   get mode() { return mode; }, get chalShots() { return chalShots; }, get tour() { return save.tour; },
   get sinks() { return sinks.length; }, get floats() { return floats.map(f => f.txt); }, get confetti() { return confetti.length; }, get slow() { return slow; },

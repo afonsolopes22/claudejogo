@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "build": "mkdir -p www && cp index.html www/index.html",
+    "build": "mkdir -p www && cp index.html manifest.json sw.js www/ && rm -rf www/icons && cp -r icons www/icons",
     "ios": "npm run build && npx cap sync ios && npx cap open ios"
   },
   "dependencies": {
