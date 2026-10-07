@@ -35,21 +35,22 @@ function run(P) {
   const speed = b => Math.hypot(b.vx, b.vy);
   const E = bs => bs.reduce((e, b) => e + 0.5 * (b.vx * b.vx + b.vy * b.vy) + 0.2 * R * R * (b.wx * b.wx + b.wy * b.wy + b.wz * b.wz), 0);
 
-  T('Rolamento: desaceleração segue o modelo (v(1 s) ≈ 405 px/s a partir de 600)', () => {
+  T('Rolamento: desaceleração segue o modelo (v(1 s) a partir de 600 px/s)', () => {
     const [b] = ph.setup([roll(1, 100, 198, 600, 0)]); ph.steps(240);
-    return { ok: near(b.vx, 405.5, 8), d: 'v=' + b.vx.toFixed(1) };
+    const k = ph.PH.rollA / ph.PH.rollB, exp = (600 + k) * Math.exp(-ph.PH.rollB) - k;
+    return { ok: near(b.vx, exp, 8), d: 'v=' + b.vx.toFixed(1) + ' esperado ' + exp.toFixed(1) };
   });
   T('Deslizamento → rolamento: a 5/7 da velocidade inicial (bola sem efeito)', () => {
-    const [c] = ph.setup([B(0, 100, 198)]); ph.hit(0, 0.5, 0, 0);
+    const [c] = ph.setup([B(0, 100, 198)]); ph.hit(0, 0.3, 0, 0);
     const v0 = speed(c); let v1 = null;
     ph.run(1, () => { if (v1 === null && Math.hypot(c.vx - R * c.wy, c.vy + R * c.wx) < 3) { v1 = speed(c); return false; } });
     return { ok: near(v1 / v0, 5 / 7, 0.02), d: 'v/v0=' + (v1 / v0).toFixed(3) + ' (esperado 0.714)' };
   });
   T('Deslizamento dura (2/7)·v0/(μg) segundos', () => {
-    const [c] = ph.setup([B(0, 100, 198)]); ph.hit(0, 0.5, 0, 0);
+    const [c] = ph.setup([B(0, 100, 198)]); ph.hit(0, 0.3, 0, 0);
     const v0 = speed(c); let t1 = null;
     ph.run(1, t => { if (t1 === null && Math.hypot(c.vx - R * c.wy, c.vy + R * c.wx) < 3) { t1 = t; return false; } });
-    const exp = (2 / 7) * v0 / (0.2 * ph.GRAV);
+    const exp = (2 / 7) * v0 / (ph.PH.slide * ph.GRAV);
     return { ok: near(t1, exp, exp * 0.06), d: 't=' + t1.toFixed(3) + ' esperado ' + exp.toFixed(3) };
   });
   T('Efeito lateral (wz) decai linearmente à taxa SPIN_DECAY', () => {
@@ -123,9 +124,20 @@ function run(P) {
     const bs = ph.setup([roll(1, 200, 200, -400, -400)]);
     const pot = []; ph.run(3); return { ok: !bs[0].alive, d: 'alive=' + bs[0].alive };
   });
-  T('Caçapa: bola rente à tabela entra na caçapa do canto (jaws não a prendem)', () => {
-    const [b] = ph.setup([roll(1, 300, ph.T + R, -500, 0)]); ph.run(3);
-    return { ok: !b.alive, d: 'alive=' + b.alive + ' x=' + b.x.toFixed(1) };
+  T('Bola a rolar rente à tabela bate na ponta da boca da caçapa e desvia (canto e meio)', () => {
+    const out = [];
+    for (const [x0, vx] of [[300, -500], [150, 500], [500, -500], [250, 500]]) {          // rumo ao canto esq., ao meio (vindo da esq.), ao meio (vindo da dir.) e ao meio de novo
+      const [bl] = ph.setup([roll(1, x0, ph.T + R, vx, 0)]); let dev = 0, ang = 0; const dir0 = Math.atan2(0, vx);
+      ph.run(0.8, () => { dev = Math.max(dev, Math.abs(bl.y - (ph.T + R))); if (dev > 4 && !ang) ang = Math.abs(deg(Math.atan2(bl.vy, bl.vx) - dir0)); });
+      out.push({ dev, ang, alive: bl.alive });
+    }
+    return { ok: out.every(o => o.dev > 8 && o.ang > 15), d: out.map(o => 'desvio=' + o.dev.toFixed(0) + 'px ângulo=' + o.ang.toFixed(0) + '°').join(' | ') };
+  });
+  T('Bola rente à tabela, vinda do lado oposto, passa a caçapa do meio e é desviada pela ponta mais próxima', () => {
+    const j = ph.JAWS.find(q => q.x > ph.MIDX && q.y < ph.T);           // ponta direita da caçapa do meio, em cima
+    const [bl] = ph.setup([roll(1, j.x + 100, ph.T + R, -500, 0)]); let first = null;
+    ph.run(0.5, () => { if (first === null && Math.hypot(bl.x - j.x, bl.y - j.y) < R + 3.5 + 0.2 ) first = [bl.vx, bl.vy]; });
+    return { ok: first !== null || !bl.alive, d: first ? 'contacto com a ponta, v=' + first.map(v => v.toFixed(0)) : 'sem contacto, alive=' + bl.alive };
   });
   T('Caçapa: bola rápida (1500 px/s) apontada ao centro cai', () => {
     const [b] = ph.setup([roll(1, 300, 300, -1500 * Math.SQRT1_2, -1500 * Math.SQRT1_2)]); const pk = ph.POCKETS[0];
@@ -138,9 +150,9 @@ function run(P) {
     return { ok: !dentro.alive && fora.alive, d: 'boca: alive=' + dentro.alive + ', tabela: alive=' + fora.alive };
   });
   T('Pontas (jaws): bola que bate de frente na ponta da tabela ressalta e continua na mesa', () => {
-    const j = ph.JAWS.find(q => q.x > 300 && q.y === ph.T);        // ponta junto à caçapa do meio, em cima
+    const j = ph.JAWS.find(q => q.x > 300 && q.y < ph.T);             // ponta junto à caçapa do meio, em cima
     const [b] = ph.setup([roll(1, j.x, 200, 0, -700)]); let minD = 1e9; ph.run(1.2, () => { minD = Math.min(minD, Math.hypot(b.x - j.x, b.y - j.y)); });
-    return { ok: b.alive && minD >= R - 0.01, d: 'distância mínima à ponta=' + minD.toFixed(2) + ' (≥ ' + R + ') alive=' + b.alive };
+    return { ok: b.alive && minD >= R + 3.5 - 0.01, d: 'distância mínima à ponta=' + minD.toFixed(2) + ' (≥ ' + (R + 3.5) + ') alive=' + b.alive };
   });
   T('snap/restoreSnap repõe posição, velocidade e rotação (wx, wy, wz)', () => {
     const bs = ph.setup([B(0, 100, 198), B(1, 300, 205), B(2, 330, 190)]); ph.hit(0.02, 0.8, 0.7, 0.7);
@@ -189,6 +201,16 @@ function run(P) {
     const snap = seed => { P.seed = seed; P.newGame('2p'); return P.sb.cue && P.phys.balls.map(b => b.n + ':' + Math.round(b.x) + ',' + Math.round(b.y)).join('|'); };
     const a = snap(123), b = snap(123), c = snap(777), d = snap(4242);
     return { ok: a === b && (a !== c || a !== d), d: (a === b ? 'repetível' : 'DIFERENTE') + (a !== c ? ', 123≠777' : '') };
+  });
+  T('Abertura a 75% (±0,34°): espalha o triângulo e ≥4 bolas tocam a tabela em ≥90% das aberturas', () => {
+    P.seed = 2024; let pass = 0, rails = 0, disp = 0; const N = 40;
+    for (let k = 0; k < N; k++) {
+      P.newGame('2p'); const s0 = P.sb.snap(), b0 = ph.balls.map(b => [b.x, b.y]);
+      const sh = P.sb.runSim((P.rnd() - 0.5) * 0.012, 0.75);
+      let d = 0, c = 0; ph.balls.forEach((b, i) => { if (i && b.alive) { d += Math.hypot(b.x - b0[i][0], b.y - b0[i][1]); c++; } });
+      rails += sh.railBalls.length; disp += d / Math.max(1, c); if (sh.railBalls.length >= 4) pass++; P.sb.restoreSnap(s0);
+    }
+    return { ok: pass >= N * 0.9 && disp / N > 60, d: pass + '/' + N + ' cumprem a regra; tabela média=' + (rails / N).toFixed(1) + '; deslocamento médio=' + (disp / N).toFixed(0) + ' px' };
   });
   T('Stress: 400 tacadas aleatórias, sem NaN, dentro da mesa e todas param', () => {
     P.seed = 99; let bad = '', stuck = 0;

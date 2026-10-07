@@ -465,7 +465,7 @@ const POCKETS = [
   { x: L,    y: B, r: 25, vr: 21 }, { x: MIDX, y: B, r: 20, vr: 17 }, { x: Rr, y: B, r: 25, vr: 21 },
 ];
 const COLORS = ['#f4f4f4','#f5c518','#1e50c8','#d92b2b','#6a2fa0','#f57c1f','#1f8a3c','#7a1f1f','#111'];
-const MAX_SPEED = 1900, BALL_E = 0.96;
+const MAX_SPEED = 1900;
 const SUB = 1 / 240;
 const APEX_X = W - 250, HEAD_X = W - 540;   // triângulo à direita (vértice virado para a branca) e bola branca à esquerda
 const RACK_DX = Math.sqrt(3) * BR * 1.002;
@@ -543,21 +543,21 @@ TOUR.rounds.forEach(r => Object.defineProperty(r, 'name', { get: () => tr('tour.
 // par = tacadas para 3 estrelas (par+1 = 2 estrelas); max = tacadas permitidas. Fácil de editar à mão.
 const CHALLENGES = [
 /*CHAL_START*/
-  { cue:[263,198], goal:[7], avoid:[], par:1, max:3, balls:[[7,51,285]] },   // 1
-  { cue:[321,246], goal:[3], avoid:[], par:1, max:3, balls:[[3,148,49]] },   // 2
-  { cue:[174,130], goal:[11], avoid:[], par:1, max:3, balls:[[11,403,198]] },   // 3
-  { cue:[248,219], goal:[5], avoid:[], par:1, max:3, balls:[[5,408,250]] },   // 4
+  { cue:[259,224], goal:[7], avoid:[], par:1, max:3, balls:[[7,82,316]] },   // 1
+  { cue:[303,132], goal:[3], avoid:[], par:1, max:3, balls:[[3,266,173]] },   // 2
+  { cue:[194,229], goal:[11], avoid:[], par:1, max:3, balls:[[11,304,133]] },   // 3
+  { cue:[294,179], goal:[5], avoid:[], par:1, max:3, balls:[[5,337,192]] },   // 4
   { cue:[138,192], goal:[11], avoid:[], par:1, max:3, balls:[[11,180,107]] },   // 5
-  { cue:[259,279], goal:[2,3], avoid:[], par:2, max:4, balls:[[2,540,342],[3,661,111]] },   // 6
+  { cue:[257,284], goal:[2,3], avoid:[], par:2, max:4, balls:[[2,641,321],[3,573,136]] },   // 6
   { cue:[323,71], goal:[15,6], avoid:[], par:2, max:4, balls:[[15,349,118],[6,94,209]] },   // 7
-  { cue:[80,312], goal:[2,9], avoid:[], par:2, max:4, balls:[[2,529,100],[9,335,177]] },   // 8
-  { cue:[215,314], goal:[2,1], avoid:[], par:2, max:4, balls:[[2,366,195],[1,648,274],[4,574,290]] },   // 9
-  { cue:[213,107], goal:[14,10], avoid:[], par:2, max:4, balls:[[14,646,163],[10,124,99],[5,457,150]] },   // 10
+  { cue:[126,294], goal:[2,9], avoid:[], par:2, max:4, balls:[[2,535,86],[9,324,131]] },   // 8
+  { cue:[244,294], goal:[2,1], avoid:[], par:2, max:4, balls:[[2,332,185],[1,665,275],[4,557,292]] },   // 9
+  { cue:[208,109], goal:[14,10], avoid:[], par:2, max:4, balls:[[14,636,158],[10,142,117],[5,446,134]] },   // 10
   { cue:[303,219], goal:[1], avoid:[], par:1, max:3, balls:[[1,327,199],[5,535,193],[7,341,266],[10,245,181]] },   // 11
   { cue:[130,147], goal:[14], avoid:[], par:1, max:3, balls:[[14,100,112],[6,432,234],[9,469,230],[3,364,274]] },   // 12
   { cue:[280,240], goal:[14], avoid:[], par:1, max:3, balls:[[14,392,215],[5,312,238],[4,488,224],[10,593,306]] },   // 13
-  { cue:[255,172], goal:[13,12], avoid:[], par:2, max:4, balls:[[13,394,243],[12,565,319],[7,462,267],[4,534,290],[14,372,221]] },   // 14
-  { cue:[179,146], goal:[10,15], avoid:[], par:2, max:4, balls:[[10,527,117],[15,569,339],[6,213,229],[2,335,132],[3,301,131]] },   // 15
+  { cue:[229,146], goal:[13,12], avoid:[], par:2, max:4, balls:[[13,363,256],[12,553,349],[7,446,286],[4,515,295],[14,402,229]] },   // 14
+  { cue:[264,93], goal:[10,15], avoid:[], par:2, max:4, balls:[[10,370,148],[15,415,180],[6,256,133],[2,438,267],[3,313,114]] },   // 15
   { cue:[216,272], goal:[15,1,10], avoid:[], par:3, max:5, balls:[[15,68,245],[1,546,329],[10,359,244],[6,503,121]] },   // 16
   { cue:[268,87], goal:[6,11,15], avoid:[], par:3, max:5, balls:[[6,214,97],[11,564,246],[15,396,270],[1,137,269]] },   // 17
   { cue:[183,81], goal:[9,4,2], avoid:[], par:3, max:5, balls:[[9,374,205],[4,78,251],[2,422,176],[5,478,172]] },   // 18
@@ -568,8 +568,8 @@ const CHALLENGES = [
   { cue:[219,257], goal:[1,2,12,6], avoid:[8], par:4, max:6, balls:[[1,138,275],[2,344,125],[12,165,144],[6,210,97],[8,215,66]] },   // 23
   { cue:[280,202], goal:[7,6,13,11], avoid:[8], par:4, max:6, balls:[[7,398,141],[6,195,229],[13,627,304],[11,221,74],[8,221,265]] },   // 24
   { cue:[255,246], goal:[10,9,2,5], avoid:[8], par:4, max:6, balls:[[10,395,251],[9,409,166],[2,665,268],[5,74,219],[8,517,244]] },   // 25
-  { cue:[312,225], goal:[1,15,4], avoid:[8], par:3, max:5, balls:[[1,134,300],[15,161,53],[4,402,180],[5,191,267],[12,228,132],[10,523,107],[8,586,138]] },   // 26
-  { cue:[247,198], goal:[7,5,14], avoid:[8], par:3, max:5, balls:[[7,331,176],[5,573,348],[14,139,317],[12,603,182],[15,656,256],[10,286,188],[8,253,136]] },   // 27
+  { cue:[369,219], goal:[1,15,4], avoid:[8], par:3, max:5, balls:[[1,142,305],[15,203,126],[4,416,131],[5,167,214],[12,279,130],[10,566,197],[8,612,217]] },   // 26
+  { cue:[300,216], goal:[7,5,14], avoid:[8], par:3, max:5, balls:[[7,393,140],[5,516,300],[14,202,312],[12,653,167],[15,666,247],[10,284,150],[8,312,163]] },   // 27
   { cue:[163,116], goal:[12,5,11], avoid:[8], par:3, max:5, balls:[[12,350,165],[5,613,299],[11,401,218],[1,109,318],[2,323,175],[4,276,137],[8,429,177]] },   // 28
   { cue:[264,234], goal:[11,12,7,3], avoid:[8], par:4, max:6, balls:[[11,252,291],[12,418,224],[7,619,101],[3,122,210],[10,574,75],[9,625,303],[14,371,268],[8,370,120]] },   // 29
   { cue:[328,228], goal:[5,4,12,6], avoid:[8], par:3, max:5, balls:[[5,61,137],[4,219,109],[12,337,257],[6,382,147],[10,199,215],[11,249,142],[9,534,209],[8,284,330]] },   // 30
@@ -1259,17 +1259,20 @@ function playTourRound() {
 // Cada bola tem velocidade (vx,vy) e rotação (wx,wy,wz): wx,wy = rolamento/topspin/backspin (eixos horizontais), wz = efeito lateral (eixo vertical).
 // Velocidade do ponto de contacto com o pano: u = (vx - R·wy, vy + R·wx). u = 0 -> rola; u != 0 -> desliza (atrito de deslizamento).
 // Unidades: px, s. 1 m ~ 312 px, logo g ~ 3058 px/s².
-const GRAV = 3058, MU_SLIDE = 0.2, MU_BALL = 0.06, MU_CUSH = 0.16, SPIN_DECAY = 5 * 0.044 * GRAV / (2 * BR);
-const SLIDE_EPS = 3, CUSH_H = 0.25 * BR, JAW_R = 0, JAW_E = 0.45, MOUTH_C = 27, MOUTH_S = 23, SQUIRT = 0.07, MAX_OFF = 0.5;
+// parâmetros afináveis do modelo (ver tests/physics.html); expostos em __pool.phys.PH só em debug
+const PH = { slide: 0.12, cushE0: 0.95, cushK: 0.00012, cushMin: 0.6, ballE: 0.96, rollA: 35, rollB: 0.18 };
+const GRAV = 3058, MU_BALL = 0.06, MU_CUSH = 0.16, SPIN_DECAY = 5 * 0.044 * GRAV / (2 * BR);
+const SLIDE_EPS = 3, CUSH_H = 0.25 * BR, JAW_R = 3.5, JAW_P = 2, JAW_E = 0.5, MOUTH_C = 33, MOUTH_S = 27, SQUIRT = 0.07, MAX_OFF = 0.5;
 const MAX_STEP_PX = 5;                            // deslocamento máximo por sub-passo (colisão contínua: nunca atravessa uma bola)
-const JAWS = (() => {                             // pontas das tabelas (face da tabela) à entrada de cada caçapa: fixas, a bola ressalta
-  const j = [];
+const JAWS = (() => {                             // pontas (narizes) das tabelas à boca de cada caçapa: arredondadas e a sobressair JAW_P px da face
+  const j = [], o = JAW_R - JAW_P;                // centro do nariz fica "dentro" da tabela, a sobressair JAW_P para a mesa
   for (const p of POCKETS) {
-    if (p.x === MIDX) j.push({ x: p.x - MOUTH_S, y: p.y }, { x: p.x + MOUTH_S, y: p.y });
-    else { const sx = p.x === L ? 1 : -1, sy = p.y === T ? 1 : -1; j.push({ x: p.x + sx * MOUTH_C, y: p.y }, { x: p.x, y: p.y + sy * MOUTH_C }); }
+    if (p.x === MIDX) { const sy = p.y === T ? -1 : 1; j.push({ x: p.x - MOUTH_S, y: p.y + sy * o }, { x: p.x + MOUTH_S, y: p.y + sy * o }); }
+    else { const sx = p.x === L ? 1 : -1, sy = p.y === T ? 1 : -1; j.push({ x: p.x + sx * MOUTH_C, y: p.y - sy * o }, { x: p.x - sx * o, y: p.y + sy * MOUTH_C }); }
   }
   return j;
 })();
+
 
 
 // gerador pseudo-aleatório com semente (mulberry32): usado em tudo o que afeta o jogo (baralhar bolas, CPU, bola na mão)
@@ -1321,7 +1324,7 @@ function rail(b, nx, ny) {
   const vn = b.vx * nx + b.vy * ny;
   if (vn <= 0) return 0;
   sndRail(vn);
-  const e = Math.max(0.55, 0.93 - 0.00015 * vn), jn = (1 + e) * vn;
+  const e = Math.max(PH.cushMin, PH.cushE0 - PH.cushK * vn), jn = (1 + e) * vn;
   const tx = -ny, ty = nx, st = b.vx * tx + b.vy * ty + BR * b.wz - CUSH_H * (b.wx * nx + b.wy * ny);
   let jt = -st / 3.5; const lim = MU_CUSH * jn; if (jt > lim) jt = lim; else if (jt < -lim) jt = -lim;
   b.vx += -jn * nx + jt * tx; b.vy += -jn * ny + jt * ty;
@@ -1339,7 +1342,7 @@ function slideRoll(b, dt) {                        // atrito com o pano: desliza
   const fm = fMul;
   let ux = b.vx - BR * b.wy, uy = b.vy + BR * b.wx, ul = Math.hypot(ux, uy), rem = dt;
   if (ul > SLIDE_EPS) {
-    const a = MU_SLIDE * GRAV * fm, h = Math.min(dt, ul / (3.5 * a)), ex = ux / ul, ey = uy / ul, al = 5 * a / (2 * BR);
+    const a = PH.slide * GRAV * fm, h = Math.min(dt, ul / (3.5 * a)), ex = ux / ul, ey = uy / ul, al = 5 * a / (2 * BR);
     b.vx -= a * ex * h; b.vy -= a * ey * h;
     b.wx -= al * ey * h; b.wy += al * ex * h;
     rem = dt - h;
@@ -1349,7 +1352,7 @@ function slideRoll(b, dt) {                        // atrito com o pano: desliza
   if (rem > 0) {
     const sp = Math.hypot(b.vx, b.vy);
     if (sp > 0) {
-      const ns = Math.max(0, sp - (55 + sp * 0.28) * fm * rem);
+      const ns = Math.max(0, sp - (PH.rollA + sp * PH.rollB) * fm * rem);
       const k = ns / sp; b.vx *= k; b.vy *= k; b.wy = b.vx / BR; b.wx = -b.vy / BR;
       if (ns < 6) { b.vx = 0; b.vy = 0; b.wx = 0; b.wy = 0; }
     }
@@ -1429,7 +1432,7 @@ function stepCore(dt) {
 function collide(a, c, nx, ny) {
   const vr = (a.vx - c.vx) * nx + (a.vy - c.vy) * ny;
   if (vr <= 0) return;
-  const jn = vr * (1 + BALL_E) / 2;
+  const jn = vr * (1 + PH.ballE) / 2;
   a.vx -= jn * nx; a.vy -= jn * ny; c.vx += jn * nx; c.vy += jn * ny;
   const tx = -ny, ty = nx, s = (a.vx - c.vx) * tx + (a.vy - c.vy) * ty + BR * (a.wz + c.wz);
   let jt = -s / 7; const lim = MU_BALL * jn; if (jt > lim) jt = lim; else if (jt < -lim) jt = -lim;
@@ -2216,7 +2219,7 @@ if (/[?&]debug\b/.test(location.search) || (() => { try { return !!localStorage.
   toMenu, open, tr, setLang(l) { if (!I18N[l]) return; LANG = l; save.lang = l; persist(); applyI18n(); renderOffer(); updateHud(); refreshCoins(); updateMuteBtn(); }, I18N,
   fire, newGame, judge, simulate, rooms: ROOMS, save, Snd, CUES, CLOTHS, TABLES, maybeOffer, aimMax, confettiBurst, startChal, CHALLENGES, TOUR, ACH, lvlInfo,
   get seed() { return rngS; }, set seed(v) { rngS = v >>> 0; }, rnd,
-  phys: { BR, L, Rr, T, B, MIDX, POCKETS, JAWS, SUB, MAX_SPEED, GRAV, get balls() { return balls; },
+  phys: { PH, BR, L, Rr, T, B, MIDX, POCKETS, JAWS, SUB, MAX_SPEED, GRAV, get balls() { return balls; },
     setup(list) { balls = list.map(o => Object.assign(o.n === 0 ? newCue(o.x, o.y) : mk(o.n, o.x, o.y), o)); cue = balls.find(b => b.n === 0) || null; shot = newShot(); fMul = 1; return balls; },
     hit(ang, pw, top, side, elev) { launch(ang, pw, 1, top || 0, side || 0, elev || 0); },
     run(sec, onStep) { SIM = true; const N = Math.round(sec / SUB); let i = 0; try { for (; i < N; i++) { step(SUB); if (onStep && onStep(i * SUB) === false) { i++; break; } if (!anyMoving()) { i++; break; } } } finally { SIM = false; } return i * SUB; },
