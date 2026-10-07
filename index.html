@@ -51,6 +51,15 @@
   #spin { width:54px; height:54px; border-radius:50%; background:radial-gradient(circle at 35% 30%,#fff,#cfd6d2); border:2px solid #2c6a45; position:relative; flex:none; touch-action:none; }
   #spin.disabled, #nudge.disabled { opacity:.4; pointer-events:none; }
   #spinDot { position:absolute; width:12px; height:12px; border-radius:50%; background:#d33; left:calc(50% - 6px); top:calc(50% - 6px); pointer-events:none; box-shadow:0 0 0 1px #0006; }
+  #power .sug { position:absolute; left:0; right:0; height:3px; background:#ffd54a; box-shadow:0 0 6px #ffd54a; display:none; pointer-events:none; z-index:2; }
+  .mgrid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:10px; width:100%; max-width:700px; margin:auto; }
+  .mcard { flex-direction:column; min-height:104px; gap:6px; padding:10px 8px; white-space:normal; line-height:1.2; }
+  .mcard b { font-size:16px; } .mcard small { font-size:12px; color:var(--dim); font-weight:500; }
+  .p2row { display:flex; align-items:center; gap:10px; width:100%; max-width:420px; } .p2row label { flex:0 0 130px; font-size:13px; color:var(--dim); text-align:left; }
+  .p2row input { flex:1; min-width:0; height:44px; border-radius:10px; border:2px solid #2c6a45; background:#0b1d14; color:#fff; font-size:16px; padding:0 12px; }
+  .seg { display:flex; gap:6px; flex-wrap:wrap; justify-content:center; } .seg button { min-width:0; min-height:44px; font-size:13px; padding:8px 14px; } .seg button.on { background:linear-gradient(#ffe27a,#ffc41f); color:#2a1d00; box-shadow:0 3px 0 #a87400; }
+  #rpBar { position:fixed; left:50%; bottom:calc(env(safe-area-inset-bottom) + 8px); transform:translateX(-50%); display:none; gap:8px; align-items:center; z-index:26; background:rgba(8,24,15,.88); padding:6px 8px; border-radius:14px; border:1px solid #ffffff22; max-width:calc(100vw - 16px); }
+  #rpBar.show { display:flex; } #rpBar button { min-height:44px; min-width:0; } #rpBar button.on { background:linear-gradient(#ffe27a,#ffc41f); color:#2a1d00; } #rpMsg { font-size:12px; color:var(--dim); min-width:70px; }
   #spin::after { content:""; position:absolute; inset:15%; border:1px dashed #2c6a4588; border-radius:50%; pointer-events:none; }   /* além deste anel o taco fica elevado (massé) */
   #power { flex:1; min-height:84px; width:48px; border-radius:24px; background:#06140c; border:2px solid #2c6a45; position:relative; touch-action:none; overflow:hidden; box-shadow:inset 0 3px 8px #000a; }
   #power::after { content:""; position:absolute; inset:0; pointer-events:none; background:repeating-linear-gradient(0deg,transparent 0 calc(10% - 1px),rgba(255,255,255,.22) calc(10% - 1px) 10%); }
@@ -224,7 +233,7 @@
     </div>
     <div id="side">
       <div id="spin" class="disabled"><i id="spinDot"></i></div>
-      <div id="power" class="disabled"><div id="powerFill"></div><div id="powerText"></div></div>
+      <div id="power" class="disabled"><div id="powerFill"></div><i class="sug" id="powSug"></i><div id="powerText"></div></div>
       <div id="nudge"><button id="nL" class="alt">◀</button><button id="nR" class="alt">▶</button></div>
     </div>
   </div>
@@ -241,7 +250,7 @@
     <button id="btnCpu"><svg class="ic"><use href="#i-coin"/></svg> <span data-i18n="menu.play"></span></button>
     <button id="btnChal" class="alt"><svg class="ic"><use href="#i-target"/></svg> <span data-i18n="menu.chal"></span></button>
     <button id="btnTour" class="alt"><svg class="ic"><use href="#i-trophy"/></svg> <span data-i18n="menu.tour"></span></button>
-    <button id="btn2p" class="alt"><svg class="ic"><use href="#i-users"/></svg> <span data-i18n="menu.p2"></span></button>
+    <button id="btnModes" class="alt"><svg class="ic"><use href="#i-users"/></svg> <span data-i18n="menu.modes"></span></button>
     <button id="btnProf" class="alt"><svg class="ic"><use href="#i-list"/></svg> <span data-i18n="menu.missions"></span></button>
     <button id="btnShop" class="alt"><svg class="ic"><use href="#i-cart"/></svg> <span data-i18n="menu.shop"></span></button>
     <button id="btnDaily" class="alt"><svg class="ic"><use href="#i-gift"/></svg> <span data-i18n="menu.daily"></span></button>
@@ -261,6 +270,19 @@
     <button class="alt small fxbtn"></button>
   </div>
 </div>
+<div class="overlay top" id="modes"><button class="alt small back" data-close="modes" data-i18n="ui.back"></button><div class="ovc"><h1 data-i18n="modes.title"></h1>
+  <div class="mgrid">
+    <button id="btnM2p" class="alt mcard"><b data-i18n="modes.p2"></b><small data-i18n="modes.p2d"></small></button>
+    <button id="btnMTrain" class="alt mcard"><b data-i18n="modes.train"></b><small data-i18n="modes.traind"></small></button>
+    <button id="btnMWeek" class="alt mcard"><b data-i18n="modes.week"></b><small id="weekSub"></small></button>
+  </div></div></div>
+<div class="overlay top" id="p2setup"><button id="p2back" class="alt small back" data-i18n="ui.back"></button><div class="ovc"><h1 data-i18n="p2.title"></h1>
+  <div class="p2row"><label for="p2n0" data-i18n="p2.name1"></label><input id="p2n0" maxlength="12" autocomplete="off" spellcheck="false"></div>
+  <div class="p2row"><label for="p2n1" data-i18n="p2.name2"></label><input id="p2n1" maxlength="12" autocomplete="off" spellcheck="false"></div>
+  <div class="seg" id="p2len"><button class="alt" data-len="1" data-i18n="p2.bo1"></button><button class="alt" data-len="3" data-i18n="p2.bo3"></button><button class="alt" data-len="5" data-i18n="p2.bo5"></button></div>
+  <p id="p2stat"></p>
+  <button id="btnP2go" data-i18n="p2.start"></button></div></div>
+<div id="rpBar"><button id="rpClose" class="alt small" data-i18n="rp.close"></button><button id="rpSlow" class="alt small" data-i18n="rp.slow"></button><button id="rpGif" class="small" data-i18n="rp.gif"></button><span id="rpMsg"></span></div>
 <div class="overlay" id="offer"><div class="ovc"><h1 data-i18n="offer.title"></h1><p data-i18n="offer.sub"></p>
   <div class="card shopc" id="offerCard" style="--rc:#ffb02e"><div class="t"><span class="tag" style="color:#ffb02e" data-i18n="offer.tag"></span><b data-i18n="offer.coins"></b><small id="offerItems"></small></div></div>
   <div class="btnrow"><button id="btnOfferBuy"><span class="oldprice">2,99 €</span>0,99 €</button><button class="alt small" id="btnOfferNo" data-i18n="offer.no"></button></div></div></div>
@@ -283,6 +305,7 @@
     <h1 data-i18n="pause.title"></h1>
     <p id="pauseMsg"></p>
     <div class="btnrow"><button id="btnResume" data-i18n="ui.resume"></button><button id="btnQuit" class="alt" data-i18n="pause.quit"></button></div>
+    <div class="btnrow"><button id="btnReplay" class="alt small" data-i18n="rp.view"></button><button id="btnHeat" class="alt small" style="display:none"></button></div>
     <button class="alt small fxbtn"></button>
   </div>
 </div>
@@ -294,6 +317,7 @@
     <div class="btnrow">
       <button id="btnDouble" data-i18n="over.double"></button>
       <button id="btnRetryAd" style="display:none" data-i18n="over.retry"></button>
+      <button id="btnOverReplay" class="alt small" style="display:none" data-i18n="rp.view"></button>
       <button id="btnAgain"></button>
       <button id="btnMenu" class="alt"></button>
     </div>
@@ -322,7 +346,10 @@ pt: {
   'ui.you': "Tu", 'ui.cpu': "CPU", 'ui.p1': "Jogador 1", 'ui.p2': "Jogador 2",
   'hud.force': "FORÇA", 'hud.open': "Mesa aberta", 'hud.solids': "Lisas", 'hud.stripes': "Riscadas", 'hud.challenge': "Desafio {n}", 'hud.shot': "Tacada {a}/{b}", 'hud.goal': "Objetivo", 'hud.par': "par {n}",
   'menu.play': "Jogar", 'menu.chal': "Desafios", 'menu.tour': "Torneio", 'menu.p2': "2 Jogadores", 'menu.missions': "Missões", 'menu.shop': "Loja", 'menu.daily': "Diário",
-  'menu.chest': "Baú grátis", 'fx.low': "Reduzir efeitos: {v}", 'fx.on': "ligado", 'fx.off': "desligado", 'ai.style': "Estilo do CPU: {s}", 'ai.agg': "Agressivo", 'ai.def': "Defensivo", 'ai.bal': "Equilibrado", 'menu.how': "Como jogar", 'menu.privacy': "Privacidade", 'menu.video': "+150 ({n})", 'menu.lvl': "Nível {l} · {title} · Vitórias: {w} · Derrotas: {d}",
+  'menu.chest': "Baú grátis", 'menu.modes': "Mais modos", 'modes.title': "Mais modos", 'modes.p2': "2 Jogadores", 'modes.p2d': "Nomes, séries e placar", 'modes.train': "Treino", 'modes.traind': "Mesa livre com assistente e mapa de calor", 'modes.week': "Evento da semana", 'week.sub': "Semana {n} · {s} · muda em {d} dia(s)", 'week.title': "Evento da semana", 'hud.week': "Semana {n}",
+  'p2.title': "2 Jogadores", 'p2.name1': "Nome do jogador 1", 'p2.name2': "Nome do jogador 2", 'p2.bo1': "1 partida", 'p2.bo3': "Melhor de 3", 'p2.bo5': "Melhor de 5", 'p2.start': "Começar", 'p2.stat': "Partidas jogadas: {g} · Séries ganhas: {s}", 'p2.series': "{a} {x} – {y} {b}", 'p2.seriesWin': "{p} ganha a série!", 'p2.next': "Próxima partida", 'p2.newSeries': "Nova série",
+  'rp.view': "Ver replay", 'rp.close': "Fechar", 'rp.slow': "Câmara lenta", 'rp.gif': "Partilhar GIF", 'rp.making': "A criar GIF… {p}%", 'rp.saved': "GIF guardado", 'rp.err': "Não foi possível criar o GIF", 'rp.none': "Ainda não há replay",
+  'train.name': "Treino", 'train.stats': "Tacadas {s} · Metidas {p}", 'train.assist': "💡 Assistente", 'train.heat': "Mapa de calor", 'train.heatHint': "Mapa de calor: verde = mais acertos nessa zona", 'train.newTable': "Nova mesa!", 'train.hint': "Treino livre. Toca no assistente (💡) ou no teu nome (mapa de calor).", 'pause.train': "Treino livre: sair não custa nada.", 'fx.low': "Reduzir efeitos: {v}", 'fx.on': "ligado", 'fx.off': "desligado", 'ai.style': "Estilo do CPU: {s}", 'ai.agg': "Agressivo", 'ai.def': "Defensivo", 'ai.bal': "Equilibrado", 'menu.how': "Como jogar", 'menu.privacy': "Privacidade", 'menu.video': "+150 ({n})", 'menu.lvl': "Nível {l} · {title} · Vitórias: {w} · Derrotas: {d}",
   'rooms.title': "Escolhe a sala", 'room.bairro': "Bairro", 'room.club': "Clube", 'room.pro': "Profissional", 'room.master': "Mestre",
   'rooms.free': "Inscrição GRÁTIS · Recompensa 🪙{p} · 1.ª partida fácil", 'rooms.unlock1': "Termina a 1.ª partida para desbloquear", 'rooms.unlockLv': "Desbloqueia no nível {n}",
   'rooms.info': "Inscrição 🪙{f} · Recompensa 🪙{p}", 'rooms.play': "Jogar", 'rooms.noCoins': "Sem moedas. Ver um vídeo para ganhar 150 moedas?",
@@ -385,7 +412,10 @@ en: {
   'ui.you': "You", 'ui.cpu': "CPU", 'ui.p1': "Player 1", 'ui.p2': "Player 2",
   'hud.force': "POWER", 'hud.open': "Open table", 'hud.solids': "Solids", 'hud.stripes': "Stripes", 'hud.challenge': "Challenge {n}", 'hud.shot': "Shot {a}/{b}", 'hud.goal': "Goal", 'hud.par': "par {n}",
   'menu.play': "Play", 'menu.chal': "Challenges", 'menu.tour': "Tournament", 'menu.p2': "2 Players", 'menu.missions': "Missions", 'menu.shop': "Shop", 'menu.daily': "Daily",
-  'menu.chest': "Free chest", 'fx.low': "Reduce effects: {v}", 'fx.on': "on", 'fx.off': "off", 'ai.style': "CPU style: {s}", 'ai.agg': "Aggressive", 'ai.def': "Defensive", 'ai.bal': "Balanced", 'menu.how': "How to play", 'menu.privacy': "Privacy", 'menu.video': "+150 ({n})", 'menu.lvl': "Level {l} · {title} · Wins: {w} · Losses: {d}",
+  'menu.chest': "Free chest", 'menu.modes': "More modes", 'modes.title': "More modes", 'modes.p2': "2 Players", 'modes.p2d': "Names, series and scoreboard", 'modes.train': "Practice", 'modes.traind': "Free table with assistant and heat map", 'modes.week': "Weekly event", 'week.sub': "Week {n} · {s} · changes in {d} day(s)", 'week.title': "Weekly event", 'hud.week': "Week {n}",
+  'p2.title': "2 Players", 'p2.name1': "Player 1 name", 'p2.name2': "Player 2 name", 'p2.bo1': "Single match", 'p2.bo3': "Best of 3", 'p2.bo5': "Best of 5", 'p2.start': "Start", 'p2.stat': "Matches played: {g} · Series won: {s}", 'p2.series': "{a} {x} – {y} {b}", 'p2.seriesWin': "{p} wins the series!", 'p2.next': "Next match", 'p2.newSeries': "New series",
+  'rp.view': "Watch replay", 'rp.close': "Close", 'rp.slow': "Slow motion", 'rp.gif': "Share GIF", 'rp.making': "Making GIF… {p}%", 'rp.saved': "GIF saved", 'rp.err': "Could not create the GIF", 'rp.none': "No replay yet",
+  'train.name': "Practice", 'train.stats': "Shots {s} · Potted {p}", 'train.assist': "💡 Assistant", 'train.heat': "Heat map", 'train.heatHint': "Heat map: green = more pots from that area", 'train.newTable': "New table!", 'train.hint': "Free practice. Tap the assistant (💡) or your name (heat map).", 'pause.train': "Free practice: leaving costs nothing.", 'fx.low': "Reduce effects: {v}", 'fx.on': "on", 'fx.off': "off", 'ai.style': "CPU style: {s}", 'ai.agg': "Aggressive", 'ai.def': "Defensive", 'ai.bal': "Balanced", 'menu.how': "How to play", 'menu.privacy': "Privacy", 'menu.video': "+150 ({n})", 'menu.lvl': "Level {l} · {title} · Wins: {w} · Losses: {d}",
   'rooms.title': "Choose a room", 'room.bairro': "Neighborhood", 'room.club': "Club", 'room.pro': "Professional", 'room.master': "Master",
   'rooms.free': "FREE · Reward 🪙{p} · easy 1st match", 'rooms.unlock1': "Finish your 1st match to unlock", 'rooms.unlockLv': "Unlocks at level {n}",
   'rooms.info': "Fee 🪙{f} · Reward 🪙{p}", 'rooms.play': "Play", 'rooms.noCoins': "Out of coins. Watch a video to earn 150 coins?",
@@ -903,6 +933,7 @@ let slow = 0, cam = { t: 0, fx: W / 2, fy: H / 2 };   // câmara lenta + zoom na
 let shotPw = 0;
 let chalSecond = false, humanSkill = null, econSim = false, chalCountPending = false, chalAdBusy = false;
 let loopOn = true, idleN = 0, holdN = 0;   // loop de desenho: pára quando nada se mexe (ver loopActive/wake)
+let p2cfg = null, series = null;
 let mstat = { pots: 0, run: 0, maxRun: 0, opp: 0 }, chalIdx = 0, chalShots = 0, chalCur = null, overNext = 0;
 let shotCount = 0, potCount = 0, easyCpu = false, tut = null, tutForce = false;   // 1.ª partida fácil; tutorial
 let sinks = [], floats = [];  // bolas a afundar e textos flutuantes
@@ -978,21 +1009,24 @@ function rack() {
 // ---------- Início de jogo ----------
 function newGame(m, rm) {
   wake();
+  if (tutForce) { p2cfg = null; series = null; }
+  REC.last = null;
   mode = m; gameId++; paused = false; cpuS = null; strike = null; slow = 0; sinks = []; floats = [];
   easyCpu = m === 'cpu' && !save.firstDone;           // 1.ª partida: sala Bairro, grátis e CPU fraco
   if (m === 'cpu') { room = easyCpu ? ROOMS[0] : (rm || room); if (!easyCpu) save.coins -= room.fee; persist(); }
   rack();
   fMul = curCloth().fr;
-  turn = 0; groups = [null, null]; ballInHand = false; firstBreak = true; mstat = { pots: 0, run: 0, maxRun: 0, opp: 0 };
+  turn = m === '2p' && series ? series.games % 2 : 0; groups = [null, null]; ballInHand = false; firstBreak = m !== 'train'; mstat = { pots: 0, run: 0, maxRun: 0, opp: 0 };
   aimAngle = 0; power = 0; shot = null; pre = null;
   aiPersona = ['bal', 'bal']; cpuSpin = { top: 0, side: 0 };
   if (m === 'cpu' && !easyCpu) { aiPersona[1] = pickPersona(); if (autoPlay) aiPersona[0] = pickPersona(); }
-  $('n0').textContent = m === 'cpu' ? tr('ui.you') : tr('ui.p1');
-  $('n1').textContent = m === 'cpu' ? tr('ui.cpu') : tr('ui.p2');
+  $('n0').textContent = m === 'cpu' ? tr('ui.you') : (m === '2p' && p2cfg ? p2cfg.names[0] : tr('ui.p1'));
+  $('n1').textContent = m === 'cpu' ? tr('ui.cpu') : (m === '2p' && p2cfg ? p2cfg.names[1] : tr('ui.p2'));
   document.querySelectorAll('.overlay').forEach(o => { if (o.id !== 'adov') o.classList.remove('show'); });
   state = 'aim';
   updateHud(); Monet.banner(false);
-  startTurn(tr('g.open'));
+  startTurn(m === 'train' ? tr('train.hint') : tr('g.open'));
+  if (m === 'train') setTimeout(() => { if (mode === 'train' && state === 'aim') { updateSuggestion(); wake(); } }, 80);
   tut = null; if (!save.tutDone || tutForce) startTut(); tutForce = false;
   if (m === 'cpu' && !easyCpu && !autoPlay) { const g = gameId; setTimeout(() => { if (g === gameId && mode === 'cpu' && state !== 'over' && !tut) toast(tr('ai.style', { s: tr('ai.' + aiPersona[1]) })); }, 2200); }   // o estilo do adversário
 }
@@ -1060,6 +1094,8 @@ function judge(p, sh, pr) {
 }
 
 function resolveShot() {
+  recStop();
+  if (mode === 'train') return resolveTrain();
   if (mode === 'chal') return resolveChal();
   const p = turn, opp = 1 - p;
   const res = judge(p, shot, pre);
@@ -1112,6 +1148,7 @@ function scheduleOver(won, prize, canDouble) {
   $('btnDouble').style.display = canDouble && prize ? '' : 'none';
   if (mode !== 'chal') $('btnRetryAd').style.display = 'none';
   const id = gameId;
+  $('btnOverReplay').style.display = REC.last ? '' : 'none';
   setTimeout(() => {
     if (id !== gameId || state !== 'over') return;
     $('prizeCnt').textContent = '';
@@ -1150,6 +1187,14 @@ function endGame(winner, why) {
   let prize = 0, extra = '';
   if (mode === 'cpu') { const r = settleCpu(winner); prize = r.prize; extra = r.extra; if (room.tour && save.tour) $('btnAgain').textContent = tr('ui.nextRound'); }
   $('overMsg').textContent = tr(why) + (prize ? tr('over.won', { n: prize }) : '') + extra;
+  if (mode === '2p') {
+    const sr = p2EndGame(winner);
+    if (sr && sr.len > 1) {
+      $('overMsg').textContent = tr(why) + ' ' + tr('p2.series', { a: pName(0), x: sr.w[0], y: sr.w[1], b: pName(1) });
+      if (sr.done) $('overTitle').textContent = tr('p2.seriesWin', { p: pName(winner) });
+      $('btnAgain').textContent = sr.done ? tr('p2.newSeries') : tr('p2.next');
+    }
+  }
   scheduleOver(mode === 'cpu' ? winner === 0 : true, prize, true);
   if ((mode === 'cpu' ? winner === 0 : true) && !lowFx()) { FX.winT = 0; FX.winPk = shot && shot.pkIdx && shot.pkIdx[8] != null ? shot.pkIdx[8] : null; wake(); }
 }
@@ -1189,6 +1234,7 @@ function chalText(L) {
 }
 function startChal(i, override) {
   wake();
+  REC.last = null;
   const L = override || CHALLENGES[i]; chalCur = L; chalIdx = i; chalShots = 0; chalSecond = false; $('btnRetryAd').style.display = 'none';
   mode = 'chal'; gameId++; paused = false; cpuS = null; strike = null; slow = 0; sinks = []; floats = []; easyCpu = false; tut = null; hideCoach();
   balls = []; cue = newCue(L.cue[0], L.cue[1]); balls.push(cue);
@@ -1217,16 +1263,16 @@ function chalEnd(win, stars, why) {
   updateHud();
   let coins = 0, extra = '';
   if (win) {
-    const r = settleChal(chalIdx, stars); coins = r.coins; extra = r.extra;
-    $('overTitle').textContent = '⭐'.repeat(stars) + '☆'.repeat(3 - stars) + ' ' + tr('chal.level', { n: chalIdx + 1 });
+    const r = chalIdx === -2 ? settleWeekly(stars) : settleChal(chalIdx, stars); coins = r.coins; extra = r.extra;
+    $('overTitle').textContent = '⭐'.repeat(stars) + '☆'.repeat(3 - stars) + ' ' + (chalIdx === -2 ? tr('week.title') : tr('chal.level', { n: chalIdx + 1 }));
     $('overMsg').textContent = tr('chal.done', { n: chalShots, p: chalCur.par }) + extra;
   } else {
     $('overTitle').textContent = tr('chal.fail');
     $('overMsg').textContent = tr(why) + tr('chal.retryMsg') + extra;
   }
-  overNext = win && chalIdx < CHALLENGES.length - 1 ? chalIdx + 1 : chalIdx;
-  $('btnAgain').textContent = win && chalIdx < CHALLENGES.length - 1 ? tr('ui.nextLevel') : tr('ui.repeat');
-  $('btnMenu').textContent = tr('ui.levels');
+  overNext = win && chalIdx >= 0 && chalIdx < CHALLENGES.length - 1 ? chalIdx + 1 : chalIdx;
+  $('btnAgain').textContent = win && chalIdx >= 0 && chalIdx < CHALLENGES.length - 1 ? tr('ui.nextLevel') : tr('ui.repeat');
+  $('btnMenu').textContent = chalIdx === -2 ? tr('ui.menu') : tr('ui.levels');
   persist();
   const retry = !win && why === 'chal.noShots' && !chalSecond;
   chalCountPending = retry; if (!retry) Monet.noteMatch();   // com segunda oportunidade pendente, só conta se o jogador a recusar
@@ -1309,6 +1355,7 @@ function launch(angle, pw, pmul, top, side, elev) {
 }
 function fire(angle, pw, call) {
   wake();
+  if (mode === 'train') trainCell = heatCell(cue.x, cue.y);
   audio();
   if (tut && !isCpuTurn()) { if (tut.step < 3) { tut.step = 3; tut.wait = true; hideCoach(); } else finishTut(); }
   if (call === undefined) call = needsCall(turn) ? (calledManual ? called : autoCall(angle)) : null;
@@ -1598,24 +1645,9 @@ function simulate(me, ang, pw, pr, opt) {
   return sc;
 }
 
-function cpuDecide() {
-  const t00 = performance.now();
-  const me = turn, sk = autoPlay && me === 0 && humanSkill ? humanSkill : null, lvl = sk ? sk.ai : easyCpu ? 0 : room.ai;
-  const LV = AI_LV[lvl], pers = PERSONAS[aiPersona[me]] || PERSONAS.bal;
-  const noise = sk ? (sk.noise != null ? sk.noise : 0.04) : easyCpu ? 0.3 : room.noise, lapse = (sk && sk.lapse != null ? sk.lapse : room && room.lapse != null && !sk ? room.lapse : LV.lapse) * pers.err;
-  if (ballInHand) {
-    let bestSpot = null, bs = 1e9;
-    const K = lvl === 0 ? 1 : [0, 8, 14, 24][lvl];
-    for (let k = 0, tries = 0; k < K && tries < 200; tries++) {
-      const x = L + 40 + rnd() * ((lvl === 0 ? 316 : 556) - (L + 40)), y = T + 40 + rnd() * (B - T - 80);   // bola na mão: zona de trás da linha de cabeça (nível 0) ou quase toda a mesa
-      if (!freeSpot(x, y)) continue;
-      k++; cue.x = x; cue.y = y;
-      const g = lvl === 0 ? [] : geoCands(me), sc = g.length ? g[0].score - (lvl >= 2 ? 40 * Math.min(3, g.length - 1) : 0) : 5000;
-      if (sc < bs) { bs = sc; bestSpot = { x, y }; }
-    }
-    if (bestSpot) { cue.x = bestSpot.x; cue.y = bestSpot.y; } else { const sp = nearestFree(HEAD_X, H / 2); cue.x = sp.x; cue.y = sp.y; }
-    ballInHand = false;
-  }
+// Escolhe a tacada (sem erro de execução): candidatos diretos, segurança e efeito, avaliados por simulação conforme o nível
+function planShot(me, lvl, pers, lapse) {
+  const LV = AI_LV[lvl];
   const cands = geoCands(me), targets = legalTargets(me), call = needsCall(me);
   let best = null;
   const nearest = [...targets].sort((a, b) => Math.hypot(a.x - cue.x, a.y - cue.y) - Math.hypot(b.x - cue.x, b.y - cue.y));
@@ -1656,6 +1688,27 @@ function cpuDecide() {
       }
     }
   }
+  return { best, call, nearest };
+}
+function cpuDecide() {
+  const t00 = performance.now();
+  const me = turn, sk = autoPlay && me === 0 && humanSkill ? humanSkill : null, lvl = sk ? sk.ai : easyCpu ? 0 : room.ai;
+  const LV = AI_LV[lvl], pers = PERSONAS[aiPersona[me]] || PERSONAS.bal;
+  const noise = sk ? (sk.noise != null ? sk.noise : 0.04) : easyCpu ? 0.3 : room.noise, lapse = (sk && sk.lapse != null ? sk.lapse : room && room.lapse != null && !sk ? room.lapse : LV.lapse) * pers.err;
+  if (ballInHand) {
+    let bestSpot = null, bs = 1e9;
+    const K = lvl === 0 ? 1 : [0, 8, 14, 24][lvl];
+    for (let k = 0, tries = 0; k < K && tries < 200; tries++) {
+      const x = L + 40 + rnd() * ((lvl === 0 ? 316 : 556) - (L + 40)), y = T + 40 + rnd() * (B - T - 80);   // bola na mão: zona de trás da linha de cabeça (nível 0) ou quase toda a mesa
+      if (!freeSpot(x, y)) continue;
+      k++; cue.x = x; cue.y = y;
+      const g = lvl === 0 ? [] : geoCands(me), sc = g.length ? g[0].score - (lvl >= 2 ? 40 * Math.min(3, g.length - 1) : 0) : 5000;
+      if (sc < bs) { bs = sc; bestSpot = { x, y }; }
+    }
+    if (bestSpot) { cue.x = bestSpot.x; cue.y = bestSpot.y; } else { const sp = nearestFree(HEAD_X, H / 2); cue.x = sp.x; cue.y = sp.y; }
+    ballInHand = false;
+  }
+  const plan = planShot(me, lvl, pers, lapse); let best = plan.best; const call = plan.call, nearest = plan.nearest;
   if (firstBreak) { const hb = balls.find(b => b.alive && b.n > 0 && b.x > APEX_X - 1 && b.x < APEX_X + 1); if (hb) best = { ang: Math.atan2(hb.y - cue.y, hb.x - cue.x), pw: 1, pi: null }; }   // abertura: força máxima na bola da frente
   if (!best) {                                  // sem tacada limpa: bate na bola legal mais próxima
     const nb = nearest[0];
@@ -1819,17 +1872,18 @@ function dotEl(b) {
 function hudChal() {
   const L = chalCur;
   $('p0').classList.toggle('active', state === 'aim'); $('p1').classList.remove('active');
-  $('n0').textContent = tr('hud.challenge', { n: chalIdx + 1 }); $('g0').textContent = tr('hud.shot', { a: Math.min(chalShots + 1, L.max), b: L.max }); $('d0').innerHTML = '';
+  $('n0').textContent = chalIdx === -2 ? tr('hud.week', { n: weekNo() % 52 + 1 }) : tr('hud.challenge', { n: chalIdx + 1 }); $('g0').textContent = tr('hud.shot', { a: Math.min(chalShots + 1, L.max), b: L.max }); $('d0').innerHTML = '';
   $('n1').textContent = tr('hud.goal'); $('g1').textContent = tr('hud.par', { n: L.par });
   const box = $('d1'); box.innerHTML = '';
   L.goal.forEach(n => { const b = balls.find(x => x.n === n); if (b) box.appendChild(dotEl(b)); });
 }
 function updateHud() {
+  if (mode === 'train') return hudTrain();
   if (mode === 'chal' && chalCur) return hudChal();
   for (let p = 0; p < 2; p++) {
     $('p' + p).classList.toggle('active', state !== 'menu' && state !== 'over' && turn === p);
     const g = groups[p];
-    $('g' + p).textContent = g ? (g === 'solid' ? tr('hud.solids') : tr('hud.stripes')) : tr('hud.open');
+    $('g' + p).textContent = (g ? (g === 'solid' ? tr('hud.solids') : tr('hud.stripes')) : tr('hud.open')) + (mode === '2p' && series && series.len > 1 ? ' · ' + series.w[p] + '🏆' : '');
     const box = $('d' + p); box.innerHTML = '';
     if (!g) continue;
     const list = balls.filter(b => b.n && groupOf(b.n) === g).sort((a, b) => a.n - b.n);
@@ -2288,8 +2342,8 @@ function drawDust(now) {                         // partículas de pó muito té
   }
   ctx.globalAlpha = 1;
 }
-function drawSinks() {                           // bola a cair na caçapa: encolhe, escurece e afunda (~250 ms)
-  for (const s of sinks) {
+function drawSinks(list) {                       // bola a cair na caçapa: encolhe, escurece e afunda (~250 ms)
+  for (const s of (list || sinks)) {
     const pk = POCKETS[s.k], p = Math.min(1, s.t / 0.25), e = p * p * (3 - 2 * p);
     const x = s.x + (pk.x - s.x) * e * 0.85, y = s.y + (pk.y - s.y) * e * 0.85;
     ctx.save(); ctx.beginPath(); ctx.arc(pk.x, pk.y, pk.r + 5, 0, 7); ctx.clip();
@@ -2317,12 +2371,12 @@ function drawFrame(now) {
   if (!paused) {
     if (strike) {                                // taco: avança depressa; a bola sai no impacto
       const s = strike; s.t += dt;
-      if (!s.launched) { const k = Math.min(1, s.t / s.dur); s.pull = s.pull0 * (1 - k * k); if (k >= 1) { launch(...s.args); Snd.cue(s.pw); s.launched = true; s.t = 0; } }
+      if (!s.launched) { const k = Math.min(1, s.t / s.dur); s.pull = s.pull0 * (1 - k * k); if (k >= 1) { launch(...s.args); Snd.cue(s.pw); s.launched = true; s.t = 0; recStart(); } }
       else { s.fade += dt; s.pull = -4 * Math.min(1, s.fade / 0.18); if (s.fade > 0.18) strike = null; }
     }
     if (state === 'moving' && (!strike || strike.launched)) {
       acc += dt * (slow > 0 ? 0.25 : 1);
-      while (acc >= SUB) { step(SUB); acc -= SUB; }
+      while (acc >= SUB) { step(SUB); recTick(); acc -= SUB; }
       if (!anyMoving()) {
         settleT += dt;
         if (settleT > 0.35) { settleT = 0; acc = 0; state = 'resolving'; resolveShot(); }
@@ -2342,18 +2396,20 @@ function drawFrame(now) {
   ctx.setTransform(1, 0, 0, 1, 0, 0);
   ctx.clearRect(0, 0, cv.width, cv.height);
   ctx.setTransform(dpr * view.s, 0, 0, dpr * view.s, dpr * view.ox, dpr * view.oy);
+  if (RP.active) { replayStep(dt); ctx.save(); paintReplayScene(now); ctx.restore(); return; }
   ctx.save();
   if (cam.t > 0.01) { const k = 1 + 0.2 * cam.t; ctx.translate(cam.fx, cam.fy); ctx.scale(k, k); ctx.translate(-cam.fx, -cam.fy); }
   if (FX.shake > 0 && !lowFx()) { const k = FX.shake / 0.08 * 1.25; ctx.translate((Math.random() - 0.5) * 2 * k, (Math.random() - 0.5) * 2 * k); }   // micro-abanão (±2,5 px, 80 ms)
   ctx.drawImage(tableCv, 0, 0, W, H);
   if (tableFade < 1 && tablePrev) { ctx.globalAlpha = 1 - tableFade; ctx.drawImage(tablePrev, 0, 0, W, H); ctx.globalAlpha = 1; }   // fade entre temas
+  if (mode === 'train' && heatOn) drawHeat();
   for (const b of balls) if (b.alive) drawBallShadow(b);
   drawSinks();
   for (const b of balls) if (b.alive && b !== cue) { drawTrail(b); drawBall(b, b.x, b.y, BR); drawBallFx(b); }
   if (cue.alive) { drawTrail(cue); drawBall(cue, cue.x, cue.y, BR); drawBallFx(cue); }
   drawDust(now);
   if (state === 'aim' && cue.alive) {
-    drawAim(now); drawCalledPocket(now);
+    drawAim(now); drawCalledPocket(now); if (mode === 'train') drawSuggestion(now);
     if (ballInHand && !isCpuTurn()) {
       ctx.strokeStyle = 'rgba(255,255,255,.7)'; ctx.lineWidth = 1.5; ctx.setLineDash([3, 3]);
       ctx.beginPath(); ctx.arc(cue.x, cue.y, BR + 7, 0, 7); ctx.stroke(); ctx.setLineDash([]);
@@ -2370,6 +2426,7 @@ function frame(now) {
   if (idleN < 3) requestAnimationFrame(frame); else loopOn = false;   // nada a animar e ninguém a tocar: pára até haver um evento (wake)
 }
 function loopActive() {
+  if (RP.active) return true;
   if (paused) return false;
   return state === 'moving' || state === 'resolving' || !!strike || sinks.length > 0 || floats.length > 0 || cam.t > 0.01 || slow > 0
     || !!cpuS || (state === 'aim' && isCpuTurn()) || !!dragging || powDrag || spinDrag || (holdN > 0 && state === 'aim')
@@ -2415,6 +2472,306 @@ function finishTut(msg) { tut = null; hideCoach(); save.tutDone = true; persist(
 function tutCheckAim() { if (tut && tut.step === 0 && Math.abs(wrapA(aimAngle - tut.a0)) > 0.1) showCoach(1); }
 $('coachSkip').onclick = () => finishTut();
 $('coachOk').onclick = () => { if (tut && tut.step < 2) showCoach(tut.step + 1); };
+
+// ---------- Evento da semana: 52 mesas geradas por semente e validadas (janelas de acerto >= 0,03 rad) ----------
+const WEEKS = [{"cue":[150,209],"goal":[1],"avoid":[],"par":1,"max":3,"balls":[[1,228,192],[3,288,60],[5,529,242]]},
+  {"cue":[120,92],"goal":[15],"avoid":[],"par":1,"max":3,"balls":[[15,245,79],[14,418,220],[10,271,159],[12,540,115]]},
+  {"cue":[202,188],"goal":[2,4],"avoid":[],"par":2,"max":4,"balls":[[2,300,225],[4,242,173],[1,566,261],[6,471,111],[3,605,329],[5,331,199]]},
+  {"cue":[217,200],"goal":[14],"avoid":[],"par":1,"max":3,"balls":[[14,128,172],[10,655,84],[15,229,336],[12,659,130],[13,617,298],[11,84,236]]},
+  {"cue":[115,153],"goal":[3],"avoid":[8],"par":1,"max":3,"balls":[[3,174,189],[7,140,286],[2,478,60],[8,102,181]]},
+  {"cue":[310,270],"goal":[15,11],"avoid":[],"par":2,"max":4,"balls":[[15,373,234],[11,360,306],[12,268,97],[14,203,136],[13,493,98]]},
+  {"cue":[276,162],"goal":[3],"avoid":[],"par":1,"max":3,"balls":[[3,145,76],[5,136,304],[2,497,163],[1,461,255],[7,623,273]]},
+  {"cue":[266,209],"goal":[10],"avoid":[],"par":1,"max":3,"balls":[[10,325,266],[9,563,197],[14,509,64],[12,390,154],[15,105,229],[13,366,280]]},
+  {"cue":[245,221],"goal":[7,5],"avoid":[],"par":2,"max":4,"balls":[[7,126,73],[5,64,93],[4,308,151],[1,238,110]]},
+  {"cue":[191,85],"goal":[12],"avoid":[8],"par":1,"max":3,"balls":[[12,105,67],[13,640,214],[14,437,294],[15,586,260],[8,656,162]]},
+  {"cue":[231,254],"goal":[1],"avoid":[],"par":1,"max":3,"balls":[[1,164,123],[2,271,340],[4,192,290],[6,456,152],[7,318,114]]},
+  {"cue":[197,248],"goal":[11,15],"avoid":[],"par":2,"max":4,"balls":[[11,462,310],[15,267,206],[14,555,231],[13,674,132],[10,628,207],[9,463,61],[12,83,236]]},
+  {"cue":[243,73],"goal":[7],"avoid":[],"par":1,"max":3,"balls":[[7,335,252],[5,622,310],[2,292,228]]},
+  {"cue":[163,257],"goal":[10],"avoid":[],"par":1,"max":3,"balls":[[10,197,180],[11,392,294],[9,532,225],[15,526,113]]},
+  {"cue":[194,280],"goal":[1,4],"avoid":[8],"par":2,"max":4,"balls":[[1,280,182],[4,424,345],[3,529,184],[7,166,270],[5,530,105],[6,168,85],[8,203,164]]},
+  {"cue":[120,165],"goal":[14],"avoid":[],"par":1,"max":3,"balls":[[14,229,135],[13,517,105],[15,74,133],[12,593,160],[10,426,208],[11,233,185]]},
+  {"cue":[194,161],"goal":[1],"avoid":[],"par":1,"max":3,"balls":[[1,276,240],[6,126,308],[3,403,96]]},
+  {"cue":[237,182],"goal":[15,12],"avoid":[],"par":2,"max":4,"balls":[[15,264,173],[12,133,267],[11,472,206],[9,228,289],[13,474,246]]},
+  {"cue":[301,328],"goal":[6],"avoid":[],"par":1,"max":3,"balls":[[6,321,254],[2,127,84],[5,597,212],[7,269,314],[4,178,262]]},
+  {"cue":[249,144],"goal":[11],"avoid":[8],"par":1,"max":3,"balls":[[11,269,164],[15,507,214],[10,317,180],[14,433,344],[13,672,172],[9,530,246],[8,469,291]]},
+  {"cue":[177,291],"goal":[7,1],"avoid":[],"par":2,"max":4,"balls":[[7,257,216],[1,456,191],[2,153,251],[4,406,185]]},
+  {"cue":[139,67],"goal":[13],"avoid":[],"par":1,"max":3,"balls":[[13,73,217],[14,362,151],[15,454,120],[9,283,68]]},
+  {"cue":[291,246],"goal":[5],"avoid":[],"par":1,"max":3,"balls":[[5,342,149],[2,655,96],[7,626,146],[3,190,333],[6,655,303]]},
+  {"cue":[265,100],"goal":[13,14],"avoid":[],"par":2,"max":4,"balls":[[13,423,123],[14,341,132],[10,150,167],[9,578,159],[15,643,276],[11,219,75],[12,637,226]]},
+  {"cue":[63,170],"goal":[1],"avoid":[8],"par":1,"max":3,"balls":[[1,119,141],[7,185,310],[5,429,326],[8,448,215]]},
+  {"cue":[260,314],"goal":[10],"avoid":[],"par":1,"max":3,"balls":[[10,353,177],[15,274,133],[12,226,193],[14,117,72]]},
+  {"cue":[149,261],"goal":[7,3],"avoid":[],"par":2,"max":4,"balls":[[7,227,174],[3,314,205],[4,147,83],[5,79,186],[1,621,290],[2,196,335]]},
+  {"cue":[204,188],"goal":[9],"avoid":[],"par":1,"max":3,"balls":[[9,77,68],[11,510,214],[14,165,195],[10,580,63],[12,342,231],[15,126,178]]},
+  {"cue":[249,130],"goal":[2],"avoid":[],"par":1,"max":3,"balls":[[2,283,260],[4,520,192],[3,471,62]]},
+  {"cue":[126,297],"goal":[9,12],"avoid":[8],"par":2,"max":4,"balls":[[9,451,270],[12,204,228],[10,108,144],[11,186,72],[14,357,171],[8,487,125]]},
+  {"cue":[90,207],"goal":[6],"avoid":[],"par":1,"max":3,"balls":[[6,184,169],[5,312,320],[4,205,324],[7,462,98],[1,496,249]]},
+  {"cue":[210,319],"goal":[15],"avoid":[],"par":1,"max":3,"balls":[[15,96,87],[12,353,209],[13,272,248],[9,315,322],[10,169,308],[14,131,315]]},
+  {"cue":[185,258],"goal":[2,6],"avoid":[],"par":2,"max":4,"balls":[[2,290,150],[6,399,241],[4,429,248],[3,388,307]]},
+  {"cue":[236,190],"goal":[15],"avoid":[],"par":1,"max":3,"balls":[[15,60,302],[13,619,171],[10,411,103],[11,207,206]]},
+  {"cue":[282,312],"goal":[4],"avoid":[8],"par":1,"max":3,"balls":[[4,150,188],[2,391,145],[7,555,204],[6,481,164],[3,608,180],[8,593,281]]},
+  {"cue":[156,159],"goal":[14,11],"avoid":[],"par":2,"max":4,"balls":[[14,67,168],[11,286,300],[12,416,289],[13,573,225],[15,409,103],[9,273,148],[10,131,80]]},
+  {"cue":[268,317],"goal":[7],"avoid":[],"par":1,"max":3,"balls":[[7,166,172],[1,441,163],[6,658,132]]},
+  {"cue":[166,300],"goal":[11],"avoid":[],"par":1,"max":3,"balls":[[11,75,314],[9,425,68],[12,433,190],[13,572,251]]},
+  {"cue":[155,346],"goal":[4,3],"avoid":[],"par":2,"max":4,"balls":[[4,301,148],[3,426,240],[1,372,133],[2,668,294],[6,163,197],[7,187,108]]},
+  {"cue":[172,234],"goal":[15],"avoid":[8],"par":1,"max":3,"balls":[[15,222,201],[12,678,206],[13,460,268],[10,325,123],[9,321,194],[14,75,191],[8,409,164]]},
+  {"cue":[161,85],"goal":[6],"avoid":[],"par":1,"max":3,"balls":[[6,154,157],[7,303,331],[3,334,94]]},
+  {"cue":[315,338],"goal":[14,12],"avoid":[],"par":2,"max":4,"balls":[[14,122,183],[12,172,321],[11,607,317],[13,445,73],[15,555,177]]},
+  {"cue":[213,190],"goal":[1],"avoid":[],"par":1,"max":3,"balls":[[1,78,66],[3,573,227],[7,670,215],[4,81,268],[2,483,155]]},
+  {"cue":[167,302],"goal":[9],"avoid":[],"par":1,"max":3,"balls":[[9,146,174],[10,211,256],[14,562,138],[12,341,108],[15,295,334],[11,507,291]]},
+  {"cue":[218,202],"goal":[6,3],"avoid":[8],"par":2,"max":4,"balls":[[6,317,75],[3,243,97],[1,442,124],[7,438,207],[8,521,318]]},
+  {"cue":[276,185],"goal":[15],"avoid":[],"par":1,"max":3,"balls":[[15,164,220],[14,290,276],[9,236,342],[12,630,118]]},
+  {"cue":[224,95],"goal":[4],"avoid":[],"par":1,"max":3,"balls":[[4,63,311],[5,229,152],[2,337,235],[6,326,149],[3,132,150]]},
+  {"cue":[188,336],"goal":[15,12],"avoid":[],"par":2,"max":4,"balls":[[15,505,243],[12,178,178],[13,217,190],[11,334,185],[9,479,277],[10,462,311],[14,624,253]]},
+  {"cue":[132,210],"goal":[6],"avoid":[],"par":1,"max":3,"balls":[[6,75,163],[2,646,188],[3,362,204]]},
+  {"cue":[264,68],"goal":[12],"avoid":[8],"par":1,"max":3,"balls":[[12,205,225],[10,147,58],[14,615,96],[11,260,325],[8,209,135]]},
+  {"cue":[170,114],"goal":[5,1],"avoid":[],"par":2,"max":4,"balls":[[5,78,328],[1,284,215],[6,436,344],[3,459,298],[7,120,138],[4,535,280]]},
+  {"cue":[185,203],"goal":[12],"avoid":[],"par":1,"max":3,"balls":[[12,279,321],[9,652,167],[15,615,341],[11,321,276],[13,126,345],[10,75,112]]}];
+// ================= Fase 10: modos extra =================
+// ---------- 2 Jogadores: nomes, séries (melhor de 1/3/5) e placar ----------
+function startP2() {
+  let n0 = ($('p2n0').value.trim() || tr('ui.p1')).slice(0, 12), n1 = ($('p2n1').value.trim() || tr('ui.p2')).slice(0, 12);
+  if (n1 === n0) n1 = (n1.slice(0, 10) + ' 2');
+  const len = +(document.querySelector('#p2len .on') || { dataset: { len: 1 } }).dataset.len;
+  save.p2 = { names: [$('p2n0').value.trim(), $('p2n1').value.trim()], len }; persist();
+  p2cfg = { names: [n0, n1] }; series = { len, w: [0, 0], games: 0, done: false };
+  newGame('2p');
+}
+function renderP2Setup() {
+  const p = save.p2 || { names: ['', ''], len: 1 };
+  $('p2n0').value = p.names[0] || ''; $('p2n1').value = p.names[1] || '';
+  $('p2n0').placeholder = tr('ui.p1'); $('p2n1').placeholder = tr('ui.p2');
+  document.querySelectorAll('#p2len button').forEach(b => b.classList.toggle('on', +b.dataset.len === p.len));
+  $('p2stat').textContent = tr('p2.stat', { g: save.p2g || 0, s: save.p2s || 0 });
+}
+function p2EndGame(winner) {                       // chamado em endGame no modo 2 jogadores
+  if (!p2cfg) return null;                         // tutorial ou jogo sem configuração: não conta
+  save.p2g = (save.p2g || 0) + 1;
+  if (!series) return null;
+  series.games++; series.w[winner]++;
+  const need = Math.ceil(series.len / 2);
+  series.done = series.len === 1 || series.w[winner] >= need;
+  if (series.done && series.len > 1) save.p2s = (save.p2s || 0) + 1;
+  persist();
+  return series;
+}
+
+// ---------- Replay da última tacada ----------
+const REC = { on: false, k: 0, frames: [], init: null, M: null, last: null };
+const RP = { active: false, f: 0, acc: 0, sp: 1, from: null, rb: [], sinks: [], hold: 0, busy: false };
+function recStart() { REC.on = true; REC.k = 0; REC.frames = []; REC.init = balls.map(b => [b.n, b.x, b.y, b.alive ? 1 : 0]); REC.M = balls.map(b => b.M.slice()); }
+function recTick() {
+  if (!REC.on || (++REC.k & 3) || REC.frames.length >= 900) return;           // 60 Hz de tempo de simulação, no máximo 15 s
+  const a = new Float32Array(balls.length * 3);
+  for (let i = 0; i < balls.length; i++) { const b = balls[i]; a[i * 3] = b.x; a[i * 3 + 1] = b.y; a[i * 3 + 2] = b.alive ? 1 : 0; }
+  REC.frames.push(a);
+}
+function recStop() { if (!REC.on) return; REC.on = false; if (REC.frames.length > 8) REC.last = { init: REC.init, M: REC.M, frames: REC.frames }; }
+function rpReset() {
+  const L = REC.last; RP.f = 0; RP.acc = 0; RP.hold = 0; RP.sinks = [];
+  RP.rb = L.init.map((q, i) => ({ n: q[0], x: q[1], y: q[2], px: q[1], py: q[2], vx: 0, vy: 0, alive: q[3] === 1, M: L.M[i].slice(), dirty: true, cv: null }));
+}
+function rpApply(f) {                              // coloca as bolas na frame f (a rodar de acordo com o deslocamento)
+  const fr = REC.last.frames[f];
+  for (let i = 0; i < RP.rb.length; i++) {
+    const b = RP.rb[i], nx = fr[i * 3], ny = fr[i * 3 + 1], al = fr[i * 3 + 2] === 1;
+    if (b.alive && al) { const dx = nx - b.x, dy = ny - b.y, d = Math.hypot(dx, dy); b.vx = dx * 60; b.vy = dy * 60; if (d > 0.02 && d < 80) roll(b, dx, dy, d); } else { b.vx = b.vy = 0; }
+    if (b.alive && !al) { let k = 0, bd = 1e9; POCKETS.forEach((pk, j) => { const dd = Math.hypot(pk.x - b.x, pk.y - b.y); if (dd < bd) { bd = dd; k = j; } }); RP.sinks.push({ b, x: b.x, y: b.y, k, t: 0 }); }
+    b.x = nx; b.y = ny; b.alive = al;
+  }
+}
+function startReplay(from) {
+  if (!REC.last) { toast(tr('rp.none')); return; }
+  RP.active = true; RP.from = from; RP.sp = 1; rpReset(); rpApply(0);
+  document.querySelectorAll('.overlay').forEach(o => { if (o.id !== 'adov') o.classList.remove('show'); });
+  $('rpBar').classList.add('show'); $('rpSlow').classList.remove('on'); $('rpMsg').textContent = ''; wake();
+}
+function stopReplay() {
+  if (RP.busy) return;
+  RP.active = false; $('rpBar').classList.remove('show');
+  if (RP.from === 'pause') open('pause'); else if (RP.from === 'over') open('over');
+  wake();
+}
+function replayStep(dt) {
+  if (RP.busy) return;                             // a captar o GIF: o estado do replay é só da captura
+  const n = REC.last.frames.length;
+  if (RP.f >= n - 1) { RP.hold += dt; if (RP.hold > 1.1) { rpReset(); rpApply(0); } }
+  else { RP.acc += dt * 60 * RP.sp; while (RP.acc >= 1 && RP.f < n - 1) { RP.acc -= 1; RP.f++; rpApply(RP.f); } }
+  for (const s of RP.sinks) s.t += dt; if (RP.sinks.length) RP.sinks = RP.sinks.filter(s => s.t < 0.3);
+}
+function paintReplayScene(now) {
+  ctx.drawImage(tableCv, 0, 0, W, H);
+  for (const b of RP.rb) if (b.alive) drawBallShadow(b);
+  drawSinks(RP.sinks);
+  for (const b of RP.rb) if (b.alive && b.n) { drawTrail(b); drawBall(b, b.x, b.y, BR); }
+  const c = RP.rb[0]; if (c && c.alive) { drawTrail(c); drawBall(c, c.x, c.y, BR); }
+}
+$('rpClose').onclick = () => stopReplay();
+$('rpSlow').onclick = () => { RP.sp = RP.sp === 1 ? 0.35 : 1; $('rpSlow').classList.toggle('on', RP.sp !== 1); };
+
+// ---------- GIF animado (codificador próprio, sem bibliotecas) ----------
+const GIF_BAY = [0, 8, 2, 10, 12, 4, 14, 6, 3, 11, 1, 9, 15, 7, 13, 5];
+function gifQuant(d, w, h) {                       // paleta fixa 6x6x6 + cinzas, com tramado ordenado
+  const o = new Uint8Array(w * h);
+  for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
+    const i = (y * w + x) * 4, t = (GIF_BAY[(y & 3) * 4 + (x & 3)] - 7.5) * 2.4;
+    const r = Math.min(5, Math.max(0, Math.round((d[i] + t) / 51))), g = Math.min(5, Math.max(0, Math.round((d[i + 1] + t) / 51))), b = Math.min(5, Math.max(0, Math.round((d[i + 2] + t) / 51)));
+    o[y * w + x] = r * 36 + g * 6 + b;
+  }
+  return o;
+}
+function gifLZW(px) {                              // LZW do GIF (código mínimo 8)
+  const MIN = 8, CLEAR = 256, EOI = 257, out = []; let size = MIN + 1, next = EOI + 1, maxc = (1 << size) - 1, cur = 0, bits = 0;
+  const emit = c => { cur |= c << bits; bits += size; while (bits >= 8) { out.push(cur & 255); cur >>>= 8; bits -= 8; } };
+  const dict = new Map(); emit(CLEAR);
+  let pre = px[0];
+  for (let i = 1; i < px.length; i++) {
+    const k = px[i], key = (pre << 8) | k, v = dict.get(key);
+    if (v !== undefined) { pre = v; continue; }
+    emit(pre);
+    if (next > maxc && next < 4096) { size++; maxc = (1 << size) - 1; }
+    if (next < 4096) dict.set(key, next++);
+    else { emit(CLEAR); dict.clear(); size = MIN + 1; next = EOI + 1; maxc = (1 << size) - 1; }
+    pre = k;
+  }
+  emit(pre); emit(EOI); if (bits > 0) out.push(cur & 255);
+  return out;
+}
+function gifEncode(frames, w, h) {                 // frames: [{px: Uint8Array, delay: cs}]
+  const b = [], u16 = v => b.push(v & 255, (v >> 8) & 255);
+  for (const c of 'GIF89a') b.push(c.charCodeAt(0));
+  u16(w); u16(h); b.push(0xF7, 0, 0);
+  for (let i = 0; i < 256; i++) { if (i < 216) b.push(Math.floor(i / 36) * 51, Math.floor(i / 6) % 6 * 51, (i % 6) * 51); else { const g = Math.round((i - 216) * 255 / 39); b.push(g, g, g); } }
+  b.push(0x21, 0xFF, 11); for (const c of 'NETSCAPE2.0') b.push(c.charCodeAt(0)); b.push(3, 1, 0, 0, 0);
+  for (const f of frames) {
+    b.push(0x21, 0xF9, 4, 0x00); u16(f.delay); b.push(0, 0);
+    b.push(0x2C); u16(0); u16(0); u16(w); u16(h); b.push(0, 8);
+    const data = gifLZW(f.px);
+    for (let i = 0; i < data.length; i += 255) { const n = Math.min(255, data.length - i); b.push(n); for (let j = 0; j < n; j++) b.push(data[i + j]); }
+    b.push(0);
+  }
+  b.push(0x3B);
+  return new Uint8Array(b);
+}
+async function makeReplayGif(onProgress) {         // repete a tacada fora do tempo real, capta o canvas e codifica
+  const L = REC.last, n = L.frames.length, stride = Math.max(4, Math.ceil(n / 90)), gw = 320, gh = 172;
+  const cap = document.createElement('canvas'); cap.width = gw; cap.height = gh; const g = cap.getContext('2d', { willReadFrequently: true });
+  const dpr = view.dpr || 1, sx = view.ox * dpr, sy = view.oy * dpr, sw = W * view.s * dpr, sh = H * view.s * dpr;
+  const frames = [], delay = Math.max(2, Math.round(stride * 100 / 60));
+  rpReset(); rpApply(0);
+  const idxs = []; for (let f = 0; f < n; f += stride) idxs.push(f); if (idxs[idxs.length - 1] !== n - 1) idxs.push(n - 1);
+  let k = 0;
+  for (const f of idxs) {
+    while (RP.f < f) { RP.f++; rpApply(RP.f); }
+    ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.clearRect(0, 0, cv.width, cv.height); ctx.setTransform(dpr * view.s, 0, 0, dpr * view.s, dpr * view.ox, dpr * view.oy);
+    for (const s of RP.sinks) s.t = 0.05; paintReplayScene(0);
+    g.drawImage(cv, sx, sy, sw, sh, 0, 0, gw, gh);
+    frames.push({ px: gifQuant(g.getImageData(0, 0, gw, gh).data, gw, gh), delay: f === n - 1 ? 110 : delay });
+    if (++k % 3 === 0) { if (onProgress) onProgress(Math.round(100 * k / idxs.length)); await new Promise(r => setTimeout(r, 0)); }
+  }
+  rpReset(); rpApply(0);
+  return new Blob([gifEncode(frames, gw, gh)], { type: 'image/gif' });
+}
+$('rpGif').onclick = async () => {
+  if (RP.busy || !REC.last) return;
+  RP.busy = true; $('rpGif').disabled = true;
+  try {
+    const blob = await makeReplayGif(p => { $('rpMsg').textContent = tr('rp.making', { p }); });
+    const file = new File([blob], 'cue-legends-replay.gif', { type: 'image/gif' });
+    if (navigator.canShare && navigator.canShare({ files: [file] })) { try { await navigator.share({ files: [file], title: 'Cue Legends' }); } catch (e) { /* cancelado */ } $('rpMsg').textContent = ''; }
+    else { const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = file.name; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 4000); $('rpMsg').textContent = tr('rp.saved'); }
+  } catch (e) { $('rpMsg').textContent = tr('rp.err'); }
+  RP.busy = false; $('rpGif').disabled = false;
+};
+$('btnReplay').onclick = () => startReplay('pause');
+$('btnOverReplay').onclick = () => startReplay('over');
+
+// ---------- Treino: mesa livre com assistente e mapa de calor ----------
+const HEAT_C = 12, HEAT_R = 6;
+let assistOn = true, heatOn = false, sug = null, trainCell = -1;
+const heatCell = (x, y) => Math.max(0, Math.min(HEAT_R - 1, Math.floor((y - T) / (B - T) * HEAT_R))) * HEAT_C + Math.max(0, Math.min(HEAT_C - 1, Math.floor((x - L) / (Rr - L) * HEAT_C)));
+function trainSave() { if (!save.train) save.train = { shots: 0, pots: 0, a: new Array(HEAT_C * HEAT_R).fill(0), p: new Array(HEAT_C * HEAT_R).fill(0) }; return save.train; }
+function startTrain() {
+  trainSave(); sug = null; assistOn = true; heatOn = false;
+  newGame('train');
+}
+function hudTrain() {
+  const t = trainSave();
+  $('p0').classList.toggle('active', false); $('p1').classList.toggle('active', assistOn);
+  $('n0').textContent = tr('train.name'); $('g0').textContent = tr('train.stats', { s: t.shots, p: t.pots }); $('d0').innerHTML = '';
+  $('n1').textContent = tr('train.assist'); $('g1').textContent = tr(assistOn ? 'fx.on' : 'fx.off'); $('d1').innerHTML = '';
+}
+function updateSuggestion() {                      // a mesma IA do nível Mestre (sem erro) escolhe a melhor tacada
+  sug = null; $('powSug').style.display = 'none';
+  if (!assistOn || mode !== 'train' || state !== 'aim' || !cue.alive) return;
+  const gSave = groups.slice(); groups[0] = null;
+  let r = null; try { r = planShot(0, 3, PERSONAS.bal, 0); } catch (e) { r = null; }
+  groups[0] = gSave[0];
+  const rackFull = balls.filter(b => b.alive && b.n).length === 15 && balls.every(b => !b.n || b.x > APEX_X - 2);        // mesa por abrir: sugere a abertura
+  if (rackFull) { const hb = balls.find(b => b.alive && b.n && b.x < APEX_X + 1); r = hb ? { best: { ang: Math.atan2(hb.y - cue.y, hb.x - cue.x), pw: 0.85, pi: null } } : null; }
+  if (r && r.best) { sug = { ang: r.best.ang, pw: r.best.pw, pi: r.best.pi, safe: !!r.best.safe }; aimAngle = sug.ang; $('powSug').style.display = 'block'; $('powSug').style.bottom = (Math.round(sug.pw * 100)) + '%'; }
+}
+function drawSuggestion(now) {
+  if (!sug || !assistOn) return;
+  const dx = Math.cos(sug.ang), dy = Math.sin(sug.ang), p = predict(sug.ang), pulse = lowFx() ? 0.5 : Math.sin(now / 260) * 0.5 + 0.5;
+  ctx.save(); ctx.lineCap = 'round'; ctx.strokeStyle = 'rgba(255,213,74,' + (0.55 + 0.3 * pulse).toFixed(2) + ')'; ctx.lineWidth = 2; ctx.setLineDash([6, 6]);
+  ctx.beginPath(); ctx.moveTo(cue.x + dx * BR, cue.y + dy * BR); ctx.lineTo(p.gx, p.gy); ctx.stroke(); ctx.setLineDash([]);
+  if (sug.pi != null) { const pk = POCKETS[sug.pi]; ctx.shadowColor = '#ffd54a'; ctx.shadowBlur = lowFx() ? 0 : 10; ctx.lineWidth = 2.4; ctx.beginPath(); ctx.arc(pk.x, pk.y, pk.r + 2 + pulse * 2, 0, 7); ctx.stroke(); }
+  ctx.restore();
+}
+function drawHeat() {
+  const t = save.train; if (!t) return;
+  const cw = (Rr - L) / HEAT_C, ch = (B - T) / HEAT_R;
+  ctx.save(); ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.font = '700 9px sans-serif';
+  for (let r = 0; r < HEAT_R; r++) for (let c = 0; c < HEAT_C; c++) {
+    const i = r * HEAT_C + c, a = t.a[i]; if (!a) continue;
+    const rate = t.p[i] / a;
+    ctx.fillStyle = 'hsla(' + Math.round(120 * rate) + ',85%,50%,' + Math.min(0.55, 0.18 + a * 0.05).toFixed(2) + ')';
+    ctx.fillRect(L + c * cw + 1, T + r * ch + 1, cw - 2, ch - 2);
+    ctx.fillStyle = 'rgba(255,255,255,.85)'; ctx.fillText(Math.round(rate * 100) + '%', L + (c + 0.5) * cw, T + (r + 0.5) * ch);
+  }
+  ctx.restore();
+}
+function resolveTrain() {
+  const t = trainSave(), n = shot.pocketed.length;
+  t.shots++; t.pots += n;
+  if (trainCell >= 0) { t.a[trainCell]++; if (n) t.p[trainCell]++; }
+  trainCell = -1;
+  let msg = '';
+  if (shot.scratch) { const sp = nearestFree(HEAD_X, H / 2); cue.alive = true; cue.x = sp.x; cue.y = sp.y; cue.vx = cue.vy = 0; addFloat(W / 2, H * 0.42, tr('f.foul'), '#ff6a5a', 1.5); Snd.foul(); }
+  else if (n) addFloat(W / 2, H * 0.42, tr(n >= 3 ? 'f.triple' : n === 2 ? 'f.double' : 'f.good'), '#ffd54a', n >= 2 ? 1.6 : 1.3);
+  if (!balls.some(b => b.alive && b.n && b.n !== 8)) { rack(); firstBreak = false; fMul = curCloth().fr; msg = tr('train.newTable'); }
+  persist(); updateHud(); startTurn(msg);
+  setTimeout(() => { if (mode === 'train' && state === 'aim') { updateSuggestion(); wake(); } }, 60);
+}
+
+// ---------- Evento da semana (mesa por semente, igual para todos, só local) ----------
+const WEEK0 = Date.UTC(2024, 0, 1);               // 2024-01-01 (segunda-feira)
+const weekNo = () => { const d = new Date(); return Math.max(0, Math.floor((Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()) - WEEK0) / 86400000 / 7)); };
+let weekPlaying = 0;
+const weekLevel = (k) => { const L0 = WEEKS[(k == null ? weekNo() : k) % WEEKS.length]; return { cue: L0.cue.slice(), goal: L0.goal.slice(), avoid: L0.avoid.slice(), par: L0.par, max: L0.max, balls: L0.balls.map(b => b.slice()) }; };
+function weekState(k) { k = k == null ? weekNo() : k; if (!save.weekly || save.weekly.k !== k) save.weekly = { k, stars: 0, best: 0 }; return save.weekly; }
+function weekLeft() { const d = new Date(), dn = Math.floor((Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()) - WEEK0) / 86400000); return 7 - dn % 7; }
+function weekSubText() {
+  const w = weekState(), dl = weekLeft();
+  return tr('week.sub', { n: weekNo() % 52 + 1, s: w.stars ? '⭐'.repeat(w.stars) : '☆☆☆', d: dl });
+}
+function startWeekly() { weekPlaying = weekNo(); weekState(weekPlaying); startChal(-2, weekLevel(weekPlaying)); }
+function settleWeekly(stars) {                     // recompensa só quando melhora as estrelas da semana em que a mesa começou
+  const w = weekState(weekPlaying); let coins = 0, extra = '';
+  if (stars > w.stars) { coins = (stars - w.stars) * 40 + (w.stars === 0 ? 40 : 0); save.coins += coins; extra = addXp(15 * (stars - w.stars)); w.stars = stars; w.best = chalShots; save.weeklyStars = (save.weeklyStars || 0) + 1; }
+  return { coins, extra };
+}
+function renderModes() { $('weekSub').textContent = weekSubText(); }
+$('btnModes').onclick = () => { audio(); renderModes(); open('modes'); };
+$('btnM2p').onclick = () => { audio(); renderP2Setup(); open('p2setup'); };
+$('btnMTrain').onclick = () => { audio(); startTrain(); };
+$('btnMWeek').onclick = () => { audio(); startWeekly(); };
+$('p2back').onclick = () => { renderModes(); open('modes'); };
+document.querySelectorAll('#p2len button').forEach(b => b.onclick = () => { document.querySelectorAll('#p2len button').forEach(x => x.classList.toggle('on', x === b)); });
+$('btnP2go').onclick = () => { audio(); startP2(); };
+$('p1').addEventListener('click', () => { if (mode !== 'train') return; assistOn = !assistOn; if (assistOn) updateSuggestion(); else { sug = null; $('powSug').style.display = 'none'; } updateHud(); toast(tr('train.assist') + ': ' + tr(assistOn ? 'fx.on' : 'fx.off')); wake(); });
+$('p0').addEventListener('click', () => { if (mode !== 'train') return; heatOn = !heatOn; toast(heatOn ? tr('train.heatHint') : tr('train.heat') + ': ' + tr('fx.off')); wake(); });
+$('btnHeat').onclick = () => { heatOn = !heatOn; $('btnHeat').textContent = tr('train.heat') + ': ' + tr(heatOn ? 'fx.on' : 'fx.off'); wake(); };
 
 // ---------- Arranque ----------
 (() => {
@@ -2479,7 +2836,6 @@ $('btnOfferNo').onclick = () => open('menu');
 
 // ---------- Menus ----------
 $('btnCpu').onclick = () => { audio(); renderRooms(); open('rooms'); };
-$('btn2p').onclick = () => { audio(); newGame('2p'); };
 $('btnTut').onclick = () => { audio(); tutForce = true; newGame('2p'); };
 $('btnProf').onclick = () => { renderProfile(); open('prof'); };
 $('btnShop').onclick = () => { renderShop(); open('shop'); };
@@ -2507,20 +2863,23 @@ $('btnDouble').onclick = async () => {
 };
 // intersticial a cada 3 partidas contra o CPU
 const afterMatch = async fn => { if (chalCountPending) { chalCountPending = false; Monet.noteMatch(); } await Monet.maybeInterstitial(); fn(); };
-const toMenu = () => { if (tut) { tut = null; hideCoach(); } gameId++; cpuS = null; strike = null; slow = 0; sinks = []; floats = []; paused = false; state = 'menu'; Monet.banner(true); open('menu'); updateHud(); wake(); setTimeout(maybeOffer, 600); };
+const toMenu = () => { p2cfg = null; series = null; sug = null; RP.active = false; $('rpBar').classList.remove('show'); if (tut) { tut = null; hideCoach(); } gameId++; cpuS = null; strike = null; slow = 0; sinks = []; floats = []; paused = false; state = 'menu'; Monet.banner(true); open('menu'); updateHud(); wake(); setTimeout(maybeOffer, 600); };
 function overAgain() {
-  if (mode === 'chal') return startChal(overNext);
+  if (mode === 'chal') return chalIdx === -2 ? startWeekly() : startChal(overNext);
+  if (mode === '2p' && series) { if (series.done) series = { len: series.len, w: [0, 0], games: 0, done: false }; return newGame('2p'); }
   if (mode === 'cpu' && room.tour && save.tour) return playTourRound();
   if (mode === 'cpu') { renderRooms(); open('rooms'); } else newGame(mode);
 }
 $('btnAgain').onclick = () => afterMatch(overAgain);
-$('btnMenu').onclick = () => afterMatch(() => { const wasChal = mode === 'chal'; toMenu(); if (wasChal) { renderChal(); open('chal'); } });
+$('btnMenu').onclick = () => afterMatch(() => { const wasChal = mode === 'chal', wk = chalIdx === -2; toMenu(); if (wasChal) { if (wk) { renderModes(); open('modes'); } else { renderChal(); open('chal'); } } });
 
 // pausa / abandonar
 $('menuBtn').onclick = () => {
+  if (RP.active) return;
   if (state === 'menu' || state === 'over') return open('menu');
   paused = true;
-  $('pauseMsg').textContent = mode === 'chal' ? tr('pause.chal') : mode === 'cpu' && room.tour ? tr('pause.tour') : mode === 'cpu' ? (easyCpu ? tr('pause.free') : tr('pause.cpu', { f: room.fee })) : tr('pause.p2');
+  $('btnReplay').style.display = REC.last ? '' : 'none'; $('btnHeat').style.display = mode === 'train' ? '' : 'none'; $('btnHeat').textContent = tr('train.heat') + ': ' + tr(heatOn ? 'fx.on' : 'fx.off');
+  $('pauseMsg').textContent = mode === 'train' ? tr('pause.train') : mode === 'chal' ? tr('pause.chal') : mode === 'cpu' && room.tour ? tr('pause.tour') : mode === 'cpu' ? (easyCpu ? tr('pause.free') : tr('pause.cpu', { f: room.fee })) : tr('pause.p2');
   open('pause');
 };
 $('btnResume').onclick = () => { paused = false; $('pause').classList.remove('show'); wake(); };
@@ -2528,10 +2887,10 @@ const updateMuteBtn = () => { $('muteBtn').innerHTML = `<svg class="ic"><use hre
 $('muteBtn').onclick = () => { Snd.init(); Snd.setMuted(!Snd.muted); updateMuteBtn(); };
 updateMuteBtn();
 $('btnQuit').onclick = () => {
-  const wasChal = mode === 'chal';
+  const wasChal = mode === 'chal', wasTrain = mode === 'train', wasWk = chalIdx === -2;
   if (mode === 'cpu' && !easyCpu) { save.losses++; save.matches++; save.winStreak = 0; bump('play'); if (room.tour) save.tour = null; persist(); }
   toMenu();
-  if (wasChal) { renderChal(); open('chal'); }
+  if (wasTrain || (wasChal && wasWk)) { renderModes(); open('modes'); } else if (wasChal) { renderChal(); open('chal'); }
 };
 document.addEventListener('touchmove', e => { if (!e.target.closest('.grid, .overlay')) e.preventDefault(); }, { passive: false });
 document.addEventListener('contextmenu', e => e.preventDefault());
@@ -2546,6 +2905,7 @@ if (/[?&]debug\b/.test(location.search) || (() => { try { return !!localStorage.
   toMenu, open, tr, setLang(l) { if (!I18N[l]) return; LANG = l; save.lang = l; persist(); applyI18n(); renderOffer(); updateHud(); refreshCoins(); updateMuteBtn(); }, I18N,
   fire, newGame, judge, simulate, rooms: ROOMS, save, Snd, CUES, CLOTHS, TABLES, maybeOffer, aimMax, confettiBurst, startChal, CHALLENGES, TOUR, ACH, lvlInfo,
   get aiTimes() { return aiTimes; }, set aiPersonaKey(k) { aiPersona = [k, k]; }, get aiPersonaKey() { return aiPersona.slice(); }, AI_LV, PERSONAS,
+  REC, RP, WEEKS, weekNo, startReplay, stopReplay, makeReplayGif, gifEncode, startTrain, startWeekly, startP2, planShot, get series() { return series; }, get sug() { return sug; }, get assist() { return assistOn; }, set heat(v) { heatOn = !!v; },
   get seed() { return rngS; }, set seed(v) { rngS = v >>> 0; }, rnd,
   drawTableDbg(g, i) { drawTable(g, TABLES[i], CLOTHS[0]); },
   phys: { PH, BR, L, Rr, T, B, MIDX, POCKETS, JAWS, SUB, MAX_SPEED, GRAV, get balls() { return balls; },
