@@ -51,6 +51,7 @@
   #spin { width:54px; height:54px; border-radius:50%; background:radial-gradient(circle at 35% 30%,#fff,#cfd6d2); border:2px solid #2c6a45; position:relative; flex:none; touch-action:none; }
   #spin.disabled, #nudge.disabled { opacity:.4; pointer-events:none; }
   #spinDot { position:absolute; width:12px; height:12px; border-radius:50%; background:#d33; left:calc(50% - 6px); top:calc(50% - 6px); pointer-events:none; box-shadow:0 0 0 1px #0006; }
+  #spin::after { content:""; position:absolute; inset:15%; border:1px dashed #2c6a4588; border-radius:50%; pointer-events:none; }   /* além deste anel o taco fica elevado (massé) */
   #power { flex:1; min-height:84px; width:48px; border-radius:24px; background:#06140c; border:2px solid #2c6a45; position:relative; touch-action:none; overflow:hidden; box-shadow:inset 0 3px 8px #000a; }
   #power::after { content:""; position:absolute; inset:0; pointer-events:none; background:repeating-linear-gradient(0deg,transparent 0 calc(10% - 1px),rgba(255,255,255,.22) calc(10% - 1px) 10%); }
   #powerFill { position:absolute; left:0; right:0; bottom:0; height:0; background:linear-gradient(0deg,#43d17a,#ffd54a 60%,#ff5a4a); }
@@ -464,7 +465,7 @@ const POCKETS = [
   { x: L,    y: B, r: 25, vr: 21 }, { x: MIDX, y: B, r: 20, vr: 17 }, { x: Rr, y: B, r: 25, vr: 21 },
 ];
 const COLORS = ['#f4f4f4','#f5c518','#1e50c8','#d92b2b','#6a2fa0','#f57c1f','#1f8a3c','#7a1f1f','#111'];
-const MAX_SPEED = 1900, CUSHION_E = 0.78, BALL_E = 0.96;
+const MAX_SPEED = 1900, BALL_E = 0.96;
 const SUB = 1 / 240;
 const APEX_X = W - 250, HEAD_X = W - 540;   // triângulo à direita (vértice virado para a branca) e bola branca à esquerda
 const RACK_DX = Math.sqrt(3) * BR * 1.002;
@@ -554,7 +555,7 @@ const CHALLENGES = [
   { cue:[213,107], goal:[14,10], avoid:[], par:2, max:4, balls:[[14,646,163],[10,124,99],[5,457,150]] },   // 10
   { cue:[303,219], goal:[1], avoid:[], par:1, max:3, balls:[[1,327,199],[5,535,193],[7,341,266],[10,245,181]] },   // 11
   { cue:[130,147], goal:[14], avoid:[], par:1, max:3, balls:[[14,100,112],[6,432,234],[9,469,230],[3,364,274]] },   // 12
-  { cue:[118,253], goal:[14], avoid:[], par:1, max:3, balls:[[14,392,215],[5,312,238],[4,488,224],[10,593,306]] },   // 13
+  { cue:[280,240], goal:[14], avoid:[], par:1, max:3, balls:[[14,392,215],[5,312,238],[4,488,224],[10,593,306]] },   // 13
   { cue:[255,172], goal:[13,12], avoid:[], par:2, max:4, balls:[[13,394,243],[12,565,319],[7,462,267],[4,534,290],[14,372,221]] },   // 14
   { cue:[179,146], goal:[10,15], avoid:[], par:2, max:4, balls:[[10,527,117],[15,569,339],[6,213,229],[2,335,132],[3,301,131]] },   // 15
   { cue:[216,272], goal:[15,1,10], avoid:[], par:3, max:5, balls:[[15,68,245],[1,546,329],[10,359,244],[6,503,121]] },   // 16
@@ -945,7 +946,7 @@ function addFloat(x, y, txt, col, size) { floats.push({ x, y, txt, col, size: si
 
 // ---------- Bolas ----------
 const IDENT = [1, 0, 0, 0, 1, 0, 0, 0, 1];
-function mk(n, x, y) { return { n, x, y, vx: 0, vy: 0, alive: true, px: x, py: y, M: IDENT.slice(), dirty: true }; }
+function mk(n, x, y) { return { n, x, y, vx: 0, vy: 0, wx: 0, wy: 0, wz: 0, alive: true, px: x, py: y, M: IDENT.slice(), dirty: true }; }
 const isSolid = n => n >= 1 && n <= 7;
 const isStripe = n => n >= 9;
 const groupOf = n => n === 8 ? 'eight' : (isSolid(n) ? 'solid' : 'stripe');
@@ -956,7 +957,7 @@ function rack() {
   cue = newCue(HEAD_X, H / 2);
   balls.push(cue);
   const rest = [1,2,3,4,5,6,7,9,10,11,12,13,14,15];
-  for (let i = rest.length - 1; i > 0; i--) { const j = Math.random() * (i + 1) | 0; [rest[i], rest[j]] = [rest[j], rest[i]]; }
+  for (let i = rest.length - 1; i > 0; i--) { const j = rnd() * (i + 1) | 0; [rest[i], rest[j]] = [rest[j], rest[i]]; }
   const slots = new Array(15);
   slots[4] = 8;                                   // 8 no centro da 3.ª fila
   const solid = rest.find(n => isSolid(n)), stripe = rest.find(n => isStripe(n));
@@ -1253,10 +1254,45 @@ function playTourRound() {
   newGame('cpu', { name: t.name, fee: 0, prize: t.prize, noise: t.noise, ai: t.ai, aim: t.aim, xp: t.xp, lvl: 1, tour: true });
 }
 
-// ---------- Tacada ----------
-function launch(angle, pw, pmul, top, side) {
-  const c = Math.cos(angle), s = Math.sin(angle);
-  cue.vx = c * MAX_SPEED * pw * pmul; cue.vy = s * MAX_SPEED * pw * pmul;
+// ---------- Tacada e física ----------
+// ---------- Física (modelo de referência) ----------
+// Cada bola tem velocidade (vx,vy) e rotação (wx,wy,wz): wx,wy = rolamento/topspin/backspin (eixos horizontais), wz = efeito lateral (eixo vertical).
+// Velocidade do ponto de contacto com o pano: u = (vx - R·wy, vy + R·wx). u = 0 -> rola; u != 0 -> desliza (atrito de deslizamento).
+// Unidades: px, s. 1 m ~ 312 px, logo g ~ 3058 px/s².
+const GRAV = 3058, MU_SLIDE = 0.2, MU_BALL = 0.06, MU_CUSH = 0.16, SPIN_DECAY = 5 * 0.044 * GRAV / (2 * BR);
+const SLIDE_EPS = 3, CUSH_H = 0.25 * BR, JAW_R = 0, JAW_E = 0.45, MOUTH_C = 27, MOUTH_S = 23, SQUIRT = 0.07, MAX_OFF = 0.5;
+const MAX_STEP_PX = 5;                            // deslocamento máximo por sub-passo (colisão contínua: nunca atravessa uma bola)
+const JAWS = (() => {                             // pontas das tabelas (face da tabela) à entrada de cada caçapa: fixas, a bola ressalta
+  const j = [];
+  for (const p of POCKETS) {
+    if (p.x === MIDX) j.push({ x: p.x - MOUTH_S, y: p.y }, { x: p.x + MOUTH_S, y: p.y });
+    else { const sx = p.x === L ? 1 : -1, sy = p.y === T ? 1 : -1; j.push({ x: p.x + sx * MOUTH_C, y: p.y }, { x: p.x, y: p.y + sy * MOUTH_C }); }
+  }
+  return j;
+})();
+
+
+// gerador pseudo-aleatório com semente (mulberry32): usado em tudo o que afeta o jogo (baralhar bolas, CPU, bola na mão)
+let rngS = (Date.now() ^ 0x9e3779b9) >>> 0;
+function rnd() { rngS = (rngS + 0x6D2B79F5) >>> 0; let t = rngS; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }
+
+// Tacada: o taco bate a distância (side, top) do centro (em raios, via cue.spin) e eventualmente elevado (massé).
+function launch(angle, pw, pmul, top, side, elev) {
+  elev = elev || 0;
+  const v = MAX_SPEED * pw * pmul, a = Math.max(-MAX_OFF, Math.min(MAX_OFF, side * 0.4)), b = Math.max(-MAX_OFF, Math.min(MAX_OFF, top * 0.4));
+  const c = Math.cos(angle), s = Math.sin(angle), rx = -s, ry = c;     // frente e direita (y para baixo)
+  const sq = SQUIRT * a * Math.cos(elev);                              // squirt: a bola desvia-se para o lado oposto ao efeito
+  let fx = c - sq * rx, fy = s - sq * ry; const fl = Math.hypot(fx, fy); fx /= fl; fy /= fl;
+  const vh = v * Math.cos(elev);
+  cue.vx = fx * vh; cue.vy = fy * vh;
+  const k = 2.5 * vh / BR;                                             // 5/(2R²)·impulso
+  cue.wz = -k * a;                                                    // efeito lateral
+  const kt = k * b;                                                    // rolamento extra (top/back): b = 0.4R rola logo sem deslizar
+  cue.wx = -fy * kt; cue.wy = fx * kt;
+  if (elev > 0) {                                                      // massé: componente vertical do impulso com offset lateral roda a bola em torno do eixo da tacada
+    const kf = -2.5 * a * v * Math.sin(elev) / BR;
+    cue.wx += fx * kf; cue.wy += fy * kf;
+  }
   cue.dx = c; cue.dy = s; cue.touched = false; cue.top = top; cue.side = side;
 }
 function fire(angle, pw, call) {
@@ -1269,78 +1305,138 @@ function fire(angle, pw, call) {
   state = 'moving'; cpuS = null;
   powerEl.classList.add('disabled'); spinEl.classList.add('disabled'); nudgeEl.classList.add('disabled');
   const cpu = isCpuTurn(), sp = cpu ? 0 : curCue().spin;
+  // o ponto de impacto vem do círculo de efeito: até 70% do raio é efeito normal; o anel exterior eleva o taco (massé)
+  const r = Math.hypot(spin.x, spin.y), rr = Math.min(r, 0.7) / 0.7, elev = r > 0.7 ? Math.min(1, (r - 0.7) / 0.15) * 0.9 : 0;
+  const top = cpu || !r ? 0 : spin.y / r * rr * sp, side = cpu || !r ? 0 : spin.x / r * rr * sp;
   // o taco recua (já mostrado pela barra), avança depressa e só no impacto a bola sai (ver frame())
   strike = { ang: angle, pw, pull0: 14 + pw * 70, t: 0, dur: 0.14 - 0.06 * pw, launched: false, fade: 0, cx: cue.x, cy: cue.y,
-    args: [angle, pw, cpu ? 1 : curCue().power, cpu ? 0 : Math.max(-1.4, Math.min(1.4, spin.y * sp)), cpu ? 0 : spin.x * sp] };
+    args: [angle, pw, cpu ? 1 : curCue().power, top, side, cpu ? 0 : elev] };
   shotPw = pw; shotCount++;
   ballInHand = false;
   firstBreak = false;
 }
 
-// ---------- Física ----------
-function rail(b, nx, ny) {                     // (nx,ny) = normal virada para fora da mesa
+// Tabela: n = normal virada para fora. Restituição depende da velocidade normal (e portanto do ângulo); atrito tangencial usa o efeito lateral.
+function rail(b, nx, ny) {
   const vn = b.vx * nx + b.vy * ny;
-  if (vn <= 0) return;
+  if (vn <= 0) return 0;
   sndRail(vn);
-  b.vx -= (1 + CUSHION_E) * vn * nx; b.vy -= (1 + CUSHION_E) * vn * ny;
-  if (b === cue && cue.side) {                 // efeito lateral: a tabela "puxa" a bola na tangente
-    const k = cue.side * 0.3 * vn; b.vx += ny * k; b.vy -= nx * k;
-    cue.side *= 0.55; if (Math.abs(cue.side) < 0.03) cue.side = 0;
-  }
+  const e = Math.max(0.55, 0.93 - 0.00015 * vn), jn = (1 + e) * vn;
+  const tx = -ny, ty = nx, st = b.vx * tx + b.vy * ty + BR * b.wz - CUSH_H * (b.wx * nx + b.wy * ny);
+  let jt = -st / 3.5; const lim = MU_CUSH * jn; if (jt > lim) jt = lim; else if (jt < -lim) jt = -lim;
+  b.vx += -jn * nx + jt * tx; b.vy += -jn * ny + jt * ty;
+  b.wz += 2.5 * jt / BR;
+  const kh = 2.5 * CUSH_H * jn / (BR * BR);                  // a altura de contacto converte parte do rolamento (topspin/backspin) em efeito
+  b.wx += kh * ny; b.wy += -kh * nx;
   if (shot) {
     if (shot.first != null) shot.railAfter = true;
     if (b.n > 0 && !shot.railBalls.includes(b.n)) shot.railBalls.push(b.n);
   }
+  return vn;
+}
+
+function slideRoll(b, dt) {                        // atrito com o pano: desliza até u = 0, depois rola com resistência
+  const fm = fMul;
+  let ux = b.vx - BR * b.wy, uy = b.vy + BR * b.wx, ul = Math.hypot(ux, uy), rem = dt;
+  if (ul > SLIDE_EPS) {
+    const a = MU_SLIDE * GRAV * fm, h = Math.min(dt, ul / (3.5 * a)), ex = ux / ul, ey = uy / ul, al = 5 * a / (2 * BR);
+    b.vx -= a * ex * h; b.vy -= a * ey * h;
+    b.wx -= al * ey * h; b.wy += al * ex * h;
+    rem = dt - h;
+    if (rem > 1e-9) { b.wy = b.vx / BR; b.wx = -b.vy / BR; }   // acabou de deslizar: rola
+    else rem = 0;
+  } else { b.wy = b.vx / BR; b.wx = -b.vy / BR; }
+  if (rem > 0) {
+    const sp = Math.hypot(b.vx, b.vy);
+    if (sp > 0) {
+      const ns = Math.max(0, sp - (55 + sp * 0.28) * fm * rem);
+      const k = ns / sp; b.vx *= k; b.vy *= k; b.wy = b.vx / BR; b.wx = -b.vy / BR;
+      if (ns < 6) { b.vx = 0; b.vy = 0; b.wx = 0; b.wy = 0; }
+    }
+  }
+  if (b.wz) { const d = SPIN_DECAY * dt; b.wz = Math.abs(b.wz) <= d ? 0 : b.wz - Math.sign(b.wz) * d; }
+  if (!b.vx && !b.vy && Math.abs(b.wx) + Math.abs(b.wy) < 0.5) { b.wx = b.wy = 0; b.wz = 0; }
 }
 
 function step(dt) {
+  let vm = 0;
+  for (const b of balls) if (b.alive) { const v = Math.abs(b.vx) + Math.abs(b.vy); if (v > vm) vm = v; }
+  const n = Math.max(1, Math.ceil(vm * dt / MAX_STEP_PX));
+  for (let i = 0; i < n; i++) stepCore(dt / n);
+}
+
+function stepCore(dt) {
   const bs = balls;
   for (const b of bs) {
     if (!b.alive) continue;
     b.x += b.vx * dt; b.y += b.vy * dt;
-    const sp = Math.hypot(b.vx, b.vy);
-    if (sp > 0) {
-      const ns = Math.max(0, sp - (55 + sp * 0.28) * fMul * dt);
-      const k = ns / sp; b.vx *= k; b.vy *= k;
-      if (ns < 6) { b.vx = 0; b.vy = 0; }
-    }
+    slideRoll(b, dt);
     // caçapas
     for (let k = 0; k < POCKETS.length; k++) {
       const pk = POCKETS[k];
       if (Math.hypot(b.x - pk.x, b.y - pk.y) < pk.r) { pocket(b, k); break; }
     }
     if (!b.alive) continue;
-    // tabelas
-    if (b.x < L + BR)  { b.x = L + BR;  rail(b, -1, 0); }
-    if (b.x > Rr - BR) { b.x = Rr - BR; rail(b, 1, 0); }
-    if (b.y < T + BR)  { b.y = T + BR;  rail(b, 0, -1); }
-    if (b.y > B - BR)  { b.y = B - BR;  rail(b, 0, 1); }
-  }
-  for (let i = 0; i < bs.length; i++) {
-    const a = bs[i]; if (!a.alive) continue;
-    for (let j = i + 1; j < bs.length; j++) {
-      const c = bs[j]; if (!c.alive) continue;
-      let dx = c.x - a.x, dy = c.y - a.y;
-      const d2 = dx * dx + dy * dy, md = BR * 2;
+    // pontas das tabelas (jaws)
+    if (b.x < L + BR + 2 || b.x > Rr - BR - 2 || b.y < T + BR + 2 || b.y > B - BR - 2) for (const j of JAWS) {
+      const dx = b.x - j.x, dy = b.y - j.y, d2 = dx * dx + dy * dy, md = BR + JAW_R;
       if (d2 >= md * md || d2 === 0) continue;
-      const d = Math.sqrt(d2); dx /= d; dy /= d;
-      const ov = (md - d) / 2;
-      a.x -= dx * ov; a.y -= dy * ov; c.x += dx * ov; c.y += dy * ov;
-      const vr = (a.vx - c.vx) * dx + (a.vy - c.vy) * dy;
-      if (vr > 0) {
-        const jn = vr * (1 + BALL_E) / 2;
-        a.vx -= jn * dx; a.vy -= jn * dy; c.vx += jn * dx; c.vy += jn * dy;
-        if (vr > 20) sndHit(vr);
-        if (a === cue || c === cue) {
-          if (shot && shot.first == null) shot.first = (a === cue ? c : a).n;
-          if (!cue.touched) {                  // efeito vertical: bola corrida segue, bola travada recua
-            cue.touched = true;
-            if (cue.top) { const k = cue.top * 0.45 * vr; cue.vx += cue.dx * k; cue.vy += cue.dy * k; cue.top = 0; }
-          }
+      const d = Math.sqrt(d2), nx = dx / d, ny = dy / d, vn = b.vx * nx + b.vy * ny;
+      b.x = j.x + nx * md; b.y = j.y + ny * md;
+      if (vn < 0) {
+        b.vx -= (1 + JAW_E) * vn * nx; b.vy -= (1 + JAW_E) * vn * ny; if (vn < -40) sndRail(-vn);
+        if (shot) { if (shot.first != null) shot.railAfter = true; if (b.n > 0 && !shot.railBalls.includes(b.n)) shot.railBalls.push(b.n); }
+      }
+    }
+    // tabelas (colisão contínua: recua até ao instante do contacto e avança com a velocidade nova). À boca das caçapas não há tabela.
+    const inX = b.x > L + MOUTH_C && b.x < Rr - MOUTH_C && Math.abs(b.x - MIDX) > MOUTH_S, inY = b.y > T + MOUTH_C && b.y < B - MOUTH_C;
+    if (b.x < L + BR && inY)  { const t = Math.min(dt, (L + BR - b.x) / Math.max(1, -b.vx)); b.x = L + BR;  if (rail(b, -1, 0)) b.x += b.vx * t; }
+    if (b.x > Rr - BR && inY) { const t = Math.min(dt, (b.x - (Rr - BR)) / Math.max(1, b.vx)); b.x = Rr - BR; if (rail(b, 1, 0)) b.x += b.vx * t; }
+    if (b.y < T + BR && inX)  { const t = Math.min(dt, (T + BR - b.y) / Math.max(1, -b.vy)); b.y = T + BR;  if (rail(b, 0, -1)) b.y += b.vy * t; }
+    if (b.y > B - BR && inX)  { const t = Math.min(dt, (b.y - (B - BR)) / Math.max(1, b.vy)); b.y = B - BR; if (rail(b, 0, 1)) b.y += b.vy * t; }
+    if (b.x < L - 2 * BR || b.x > Rr + 2 * BR || b.y < T - 2 * BR || b.y > B + 2 * BR) { b.x = Math.min(Rr - BR, Math.max(L + BR, b.x)); b.y = Math.min(B - BR, Math.max(T + BR, b.y)); }   // rede de segurança: nunca sair da mesa
+  }
+  for (let pass = 0; pass < 2; pass++) {
+    for (let i = 0; i < bs.length; i++) {
+      const a = bs[i]; if (!a.alive) continue;
+      for (let j = i + 1; j < bs.length; j++) {
+        const c = bs[j]; if (!c.alive) continue;
+        let px = c.x - a.x, py = c.y - a.y;
+        const d2 = px * px + py * py, md = BR * 2;
+        if (d2 >= md * md) continue;
+        const wxr = c.vx - a.vx, wyr = c.vy - a.vy, w2 = wxr * wxr + wyr * wyr, pw = px * wxr + py * wyr;
+        if (pass === 0 && pw < 0 && w2 > 1e-6) {               // a aproximar-se: recuar até ao instante exato do contacto
+          let tau = (pw + Math.sqrt(pw * pw + w2 * (md * md - d2))) / w2;
+          if (tau > dt) tau = dt; if (tau < 0) tau = 0;
+          a.x -= a.vx * tau; a.y -= a.vy * tau; c.x -= c.vx * tau; c.y -= c.vy * tau;
+          px = c.x - a.x; py = c.y - a.y;
+          const d = Math.hypot(px, py) || md, nx = px / d, ny = py / d;
+          collide(a, c, nx, ny);
+          a.x += a.vx * tau; a.y += a.vy * tau; c.x += c.vx * tau; c.y += c.vy * tau;
+          const q = Math.hypot(c.x - a.x, c.y - a.y);
+          if (q < md && q > 0) { const o = (md - q) / 2, ux = (c.x - a.x) / q, uy = (c.y - a.y) / q; a.x -= ux * o; a.y -= uy * o; c.x += ux * o; c.y += uy * o; }
+        } else {                                                // sobreposição residual: só separar (sem tremor)
+          const d = Math.sqrt(d2) || 1e-6, nx = d2 === 0 ? 1 : px / d, ny = d2 === 0 ? 0 : py / d, ov = (md - d) / 2;
+          if (ov > 1e-4) { a.x -= nx * ov; a.y -= ny * ov; c.x += nx * ov; c.y += ny * ov; }
+          if (pass === 0 && pw < 0) collide(a, c, nx, ny);
         }
       }
     }
   }
+}
+
+// Colisão bola-bola: impulso normal (restituição) + impulso tangencial de atrito (throw e transferência de efeito lateral).
+function collide(a, c, nx, ny) {
+  const vr = (a.vx - c.vx) * nx + (a.vy - c.vy) * ny;
+  if (vr <= 0) return;
+  const jn = vr * (1 + BALL_E) / 2;
+  a.vx -= jn * nx; a.vy -= jn * ny; c.vx += jn * nx; c.vy += jn * ny;
+  const tx = -ny, ty = nx, s = (a.vx - c.vx) * tx + (a.vy - c.vy) * ty + BR * (a.wz + c.wz);
+  let jt = -s / 7; const lim = MU_BALL * jn; if (jt > lim) jt = lim; else if (jt < -lim) jt = -lim;
+  a.vx += jt * tx; a.vy += jt * ty; c.vx -= jt * tx; c.vy -= jt * ty;
+  a.wz += 2.5 * jt / BR; c.wz += 2.5 * jt / BR;
+  if (vr > 20) sndHit(vr);
+  if (shot && shot.first == null && (a === cue || c === cue)) shot.first = (a === cue ? c : a).n;
 }
 
 function pocket(b, k) {
@@ -1357,7 +1453,7 @@ function pocket(b, k) {
   updateHud();
 }
 
-function anyMoving() { return balls.some(b => b.alive && (b.vx || b.vy)); }
+function anyMoving() { return balls.some(b => b.alive && (b.vx || b.vy || Math.abs(b.wx) + Math.abs(b.wy) > 0.5)); }
 
 // ---------- Mira / previsão ----------
 function predict(angle) {
@@ -1422,8 +1518,8 @@ function geoCands(me) {                         // tacadas diretas (bola -> caç
   }
   return out.sort((a, b) => a.score - b.score);
 }
-function snap() { return [balls.map(b => [b.x, b.y, b.vx, b.vy, b.alive]), [cue.top, cue.side, cue.touched, cue.dx, cue.dy]]; }
-function restoreSnap(s) { balls.forEach((b, i) => { [b.x, b.y, b.vx, b.vy, b.alive] = s[0][i]; }); [cue.top, cue.side, cue.touched, cue.dx, cue.dy] = s[1]; }
+function snap() { return [balls.map(b => [b.x, b.y, b.vx, b.vy, b.alive, b.wx, b.wy, b.wz]), [cue.top, cue.side, cue.touched, cue.dx, cue.dy]]; }
+function restoreSnap(s) { balls.forEach((b, i) => { [b.x, b.y, b.vx, b.vy, b.alive, b.wx, b.wy, b.wz] = s[0][i]; }); [cue.top, cue.side, cue.touched, cue.dx, cue.dy] = s[1]; }
 
 // Simula a tacada (sem som) e devolve uma pontuação do ponto de vista de `me`.
 function simulate(me, ang, pw, pr) {
@@ -1454,7 +1550,7 @@ function cpuDecide() {
     let bestSpot = null, bs = 1e9;
     const K = lvl === 0 ? 1 : [0, 8, 14, 24][lvl];
     for (let k = 0, tries = 0; k < K && tries < 200; tries++) {
-      const x = L + 40 + Math.random() * ((lvl === 0 ? 316 : 556) - (L + 40)), y = T + 40 + Math.random() * (B - T - 80);   // bola na mão: zona de trás da linha de cabeça (nível 0) ou quase toda a mesa
+      const x = L + 40 + rnd() * ((lvl === 0 ? 316 : 556) - (L + 40)), y = T + 40 + rnd() * (B - T - 80);   // bola na mão: zona de trás da linha de cabeça (nível 0) ou quase toda a mesa
       if (!freeSpot(x, y)) continue;
       k++; cue.x = x; cue.y = y;
       const g = lvl === 0 ? [] : geoCands(me), sc = g.length ? g[0].score : 5000;
@@ -1466,7 +1562,7 @@ function cpuDecide() {
   const cands = geoCands(me), targets = legalTargets(me), call = needsCall(me);
   let best = null;
   if (lvl === 0) { if (cands.length) best = cands[0]; }
-  else {
+  else if (!firstBreak) {
     const prBase = makePre(me, null), N = [0, 6, 12, 20][lvl], list = [];
     for (const c of cands.slice(0, N)) {
       const pws = lvl === 1 ? [c.pw] : lvl === 2 ? [c.pw, Math.min(1, c.pw * 1.25)] : [c.pw * 0.8, c.pw, Math.min(1, c.pw * 1.25)];
@@ -1482,14 +1578,16 @@ function cpuDecide() {
       if (sc > bsc) { bsc = sc; best = c; }
     }
   }
+  if (firstBreak) { const hb = balls.find(b => b.alive && b.n > 0 && b.x > APEX_X - 1 && b.x < APEX_X + 1); if (hb) best = { ang: Math.atan2(hb.y - cue.y, hb.x - cue.x), pw: 1, pi: null }; }   // abertura: força máxima na bola da frente
   if (!best) {                                  // sem tacada limpa: bate na bola legal mais próxima
     let nb = null, nd = 1e9;
     for (const b of targets) { const d = Math.hypot(b.x - cue.x, b.y - cue.y); if (d < nd) { nd = d; nb = b; } }
     best = { ang: nb ? Math.atan2(nb.y - cue.y, nb.x - cue.x) : 0, pw: 0.55, pi: null };
   }
-  let ang = best.ang + (Math.random() - 0.5) * (sk ? sk.noise : easyCpu ? 0.3 : room.noise) * 2;
-  let pw = Math.min(1, best.pw * (0.93 + Math.random() * 0.14));
-  if (easyCpu && Math.random() < 0.65) { ang += (Math.random() - 0.5) * 1.4; pw = 0.2 + Math.random() * 0.6; }   // falha de propósito
+  let ang = best.ang + (rnd() - 0.5) * (sk ? sk.noise : easyCpu ? 0.3 : room.noise) * 2;
+  let pw = Math.min(1, best.pw * (0.93 + rnd() * 0.14));
+  if (firstBreak) pw = 0.97 + rnd() * 0.03;
+  if (easyCpu && rnd() < 0.65) { ang += (rnd() - 0.5) * 1.4; pw = 0.2 + rnd() * 0.6; }   // falha de propósito
   let da = ang - aimAngle; while (da > Math.PI) da -= 2 * Math.PI; while (da < -Math.PI) da += 2 * Math.PI;
   cpuS = { ph: 'aim', t: 0, from: aimAngle, da, pw, call: call ? best.pi : null };
   if (call) called = best.pi;
@@ -2117,6 +2215,13 @@ if (/[?&]debug\b/.test(location.search) || (() => { try { return !!localStorage.
   get state() { return state; }, get balls() { return balls; }, get turn() { return turn; }, get groups() { return groups; },
   toMenu, open, tr, setLang(l) { if (!I18N[l]) return; LANG = l; save.lang = l; persist(); applyI18n(); renderOffer(); updateHud(); refreshCoins(); updateMuteBtn(); }, I18N,
   fire, newGame, judge, simulate, rooms: ROOMS, save, Snd, CUES, CLOTHS, TABLES, maybeOffer, aimMax, confettiBurst, startChal, CHALLENGES, TOUR, ACH, lvlInfo,
+  get seed() { return rngS; }, set seed(v) { rngS = v >>> 0; }, rnd,
+  phys: { BR, L, Rr, T, B, MIDX, POCKETS, JAWS, SUB, MAX_SPEED, GRAV, get balls() { return balls; },
+    setup(list) { balls = list.map(o => Object.assign(o.n === 0 ? newCue(o.x, o.y) : mk(o.n, o.x, o.y), o)); cue = balls.find(b => b.n === 0) || null; shot = newShot(); fMul = 1; return balls; },
+    hit(ang, pw, top, side, elev) { launch(ang, pw, 1, top || 0, side || 0, elev || 0); },
+    run(sec, onStep) { SIM = true; const N = Math.round(sec / SUB); let i = 0; try { for (; i < N; i++) { step(SUB); if (onStep && onStep(i * SUB) === false) { i++; break; } if (!anyMoving()) { i++; break; } } } finally { SIM = false; } return i * SUB; },
+    steps(n) { SIM = true; try { for (let i = 0; i < n; i++) step(SUB); } finally { SIM = false; } },
+    get shot() { return shot; }, anyMoving },
   sb: { snap, restoreSnap, get cue() { return cue; }, runSim(ang, pw) { const sv = shot; SIM = true; shot = newShot(); launch(ang, pw, 1, 0, 0); let n = 0; do { step(SUB); } while (++n < 2400 && anyMoving()); const r = shot; shot = sv; SIM = false; return r; } },
   get mode() { return mode; }, get chalShots() { return chalShots; }, get tour() { return save.tour; },
   get sinks() { return sinks.length; }, get floats() { return floats.map(f => f.txt); }, get confetti() { return confetti.length; }, get slow() { return slow; },

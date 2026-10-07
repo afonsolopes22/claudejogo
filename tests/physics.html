@@ -1,0 +1,219 @@
+<!doctype html>
+<!-- Abrir via http (ex.: npx http-server na raiz do projeto) ou correr: node tests/run-physics.js. Por file:// o Chrome bloqueia o acesso ao iframe. -->
+<html lang="pt">
+<head>
+<meta charset="utf-8">
+<title>Cue Legends – testes de física</title>
+<style>
+  body { font:14px/1.5 system-ui, sans-serif; background:#0b1d14; color:#e8f5ec; margin:16px; }
+  h1 { font-size:18px; } table { border-collapse:collapse; width:100%; max-width:980px; }
+  td, th { border-bottom:1px solid #2a4a38; padding:4px 8px; text-align:left; vertical-align:top; }
+  .PASS { color:#5be08a; font-weight:700; } .FAIL { color:#ff6b5e; font-weight:700; }
+  #sum { font-size:16px; margin:10px 0; } iframe { position:absolute; left:-9999px; width:900px; height:400px; }
+</style>
+</head>
+<body>
+<h1>Cue Legends – bateria de testes de física</h1>
+<div id="sum">A correr…</div>
+<table id="t"><tr><th>#</th><th>Teste</th><th>Resultado</th><th>Detalhe</th></tr></table>
+<iframe id="g" src="../index.html?debug&lang=en"></iframe>
+<script>
+// Abre o jogo num iframe (com ?debug) e usa window.__pool.phys para correr cenários isolados.
+// Abrir este ficheiro num browser (servido por http ou file://) mostra PASS/FAIL; window.__results tem o resumo para automação.
+const R = 11;
+const results = []; window.__results = results;
+const frame = document.getElementById('g');
+const rad = d => d * Math.PI / 180, deg = r => r * 180 / Math.PI;
+const near = (a, b, tol) => Math.abs(a - b) <= tol;
+
+function run(P) {
+  const ph = P.phys, SUB = ph.SUB;
+  const tests = [];
+  const T = (name, fn) => tests.push({ name, fn });
+  const B = (n, x, y, o) => Object.assign({ n, x, y }, o || {});
+  const roll = (n, x, y, vx, vy, extra) => B(n, x, y, Object.assign({ vx, vy, wy: vx / R, wx: -vy / R }, extra || {}));
+  const speed = b => Math.hypot(b.vx, b.vy);
+  const E = bs => bs.reduce((e, b) => e + 0.5 * (b.vx * b.vx + b.vy * b.vy) + 0.2 * R * R * (b.wx * b.wx + b.wy * b.wy + b.wz * b.wz), 0);
+
+  T('Rolamento: desaceleração segue o modelo (v(1 s) ≈ 405 px/s a partir de 600)', () => {
+    const [b] = ph.setup([roll(1, 100, 198, 600, 0)]); ph.steps(240);
+    return { ok: near(b.vx, 405.5, 8), d: 'v=' + b.vx.toFixed(1) };
+  });
+  T('Deslizamento → rolamento: a 5/7 da velocidade inicial (bola sem efeito)', () => {
+    const [c] = ph.setup([B(0, 100, 198)]); ph.hit(0, 0.5, 0, 0);
+    const v0 = speed(c); let v1 = null;
+    ph.run(1, () => { if (v1 === null && Math.hypot(c.vx - R * c.wy, c.vy + R * c.wx) < 3) { v1 = speed(c); return false; } });
+    return { ok: near(v1 / v0, 5 / 7, 0.02), d: 'v/v0=' + (v1 / v0).toFixed(3) + ' (esperado 0.714)' };
+  });
+  T('Deslizamento dura (2/7)·v0/(μg) segundos', () => {
+    const [c] = ph.setup([B(0, 100, 198)]); ph.hit(0, 0.5, 0, 0);
+    const v0 = speed(c); let t1 = null;
+    ph.run(1, t => { if (t1 === null && Math.hypot(c.vx - R * c.wy, c.vy + R * c.wx) < 3) { t1 = t; return false; } });
+    const exp = (2 / 7) * v0 / (0.2 * ph.GRAV);
+    return { ok: near(t1, exp, exp * 0.06), d: 't=' + t1.toFixed(3) + ' esperado ' + exp.toFixed(3) };
+  });
+  T('Efeito lateral (wz) decai linearmente à taxa SPIN_DECAY', () => {
+    const [b] = ph.setup([roll(1, 100, 198, 500, 0, { wz: 90 })]); ph.steps(120);
+    const exp = 90 - 5 * 0.044 * ph.GRAV / (2 * R) * 0.5;
+    return { ok: near(b.wz, exp, 1.5), d: 'wz=' + b.wz.toFixed(2) + ' esperado ' + exp.toFixed(2) };
+  });
+  T('Colisão frontal sem efeito: bola branca para (stun), alvo leva ≈ (1+e)/2', () => {
+    const [c, o] = ph.setup([B(0, 350, 198), B(1, 400, 198)]); ph.hit(0, 0.5, 0, 0);
+    ph.run(0.2); const x = c.x;
+    return { ok: x < 388 && x > 340 && o.vx > 700, d: 'branca parou em x=' + x.toFixed(1) + ' (contacto em ≈ 378); alvo vx=' + o.vx.toFixed(0) };
+  });
+  T('Follow (topspin): a branca continua depois do contacto', () => {
+    const [c] = ph.setup([B(0, 350, 198), B(1, 400, 198)]); ph.hit(0, 0.5, 1, 0); ph.run(0.6);
+    return { ok: c.x > 395, d: 'x final=' + c.x.toFixed(1) };
+  });
+  T('Draw (backspin): a branca recua depois do contacto', () => {
+    const [c] = ph.setup([B(0, 300, 198), B(1, 400, 198)]); ph.hit(0, 0.5, -1.25, 0); ph.run(1.2);
+    return { ok: c.x < 330, d: 'x final=' + c.x.toFixed(1) + ' (contacto em 378)' };
+  });
+  T('Conservação de momento numa colisão sem efeito (±1%)', () => {
+    const [a, b] = ph.setup([roll(0, 300, 198, 300, 0), B(1, 323, 198)]);
+    const p0 = a.vx + b.vx; ph.steps(3);
+    return { ok: near(a.vx + b.vx, p0, p0 * 0.01), d: 'antes=' + p0.toFixed(1) + ' depois=' + (a.vx + b.vx).toFixed(1) };
+  });
+  T('Energia nunca aumenta numa colisão', () => {
+    const bs = ph.setup([roll(0, 300, 198, 400, 60), B(1, 330, 205), B(2, 360, 190)]);
+    const e0 = E(bs); ph.steps(6);
+    return { ok: E(bs) <= e0 * 1.0005, d: 'E0=' + e0.toFixed(0) + ' E1=' + E(bs).toFixed(0) };
+  });
+  T('Regra dos 90°: corte de 30° sem efeito → ângulo branca/alvo ≈ 90° (±8°, inclui throw e e<1)', () => {
+    const [c, o] = ph.setup([B(0, 350, 198), B(1, 400, 209)]); ph.hit(0, 0.5, 0, 0); ph.steps(24);
+    const a = Math.atan2(c.vy, c.vx), b = Math.atan2(o.vy, o.vx);
+    let d = Math.abs(deg(a - b)); if (d > 180) d = 360 - d;
+    return { ok: near(d, 90, 8), d: 'ângulo=' + d.toFixed(1) + '°' };
+  });
+  T('Throw: o alvo desvia-se da linha dos centros e o efeito lateral muda o desvio', () => {
+    const dev = side => {
+      const [c, o] = ph.setup([roll(0, 350, 198, 600, 0, { wz: side * 60 }), B(1, 400, 209)]); ph.steps(24);
+      return deg(Math.atan2(o.vy, o.vx)) - 30;
+    };
+    const d0 = dev(0), dl = dev(-1), dr = dev(1);
+    return { ok: Math.abs(d0) > 0.1 && Math.abs(d0) < 8 && Math.abs(dl - dr) > 0.5, d: 'sem=' + d0.toFixed(2) + '° esq=' + dl.toFixed(2) + '° dir=' + dr.toFixed(2) + '°' };
+  });
+  T('Tabela: restituição depende da velocidade (rápido recupera menos)', () => {
+    const r = v => { const [b] = ph.setup([roll(1, 300, 300, 0, v)]); let pv = v; ph.run(1.5, () => { if (b.vy < 0) return false; pv = b.vy; }); return -b.vy / pv; };
+    const slow = r(250), fast = r(1100);
+    return { ok: slow > fast + 0.05 && slow < 0.97 && fast > 0.55, d: 'e_lento=' + slow.toFixed(3) + ' e_rápido=' + fast.toFixed(3) };
+  });
+  T('Tabela: bola rolante a 45° sem efeito sai ≈ 45° (±8°)', () => {
+    const [b] = ph.setup([roll(1, 150, 280, 300, 300)]); ph.run(1.5, () => { if (b.vy < 0) return false; });
+    const a = deg(Math.atan2(-b.vy, b.vx));
+    return { ok: near(a, 45, 8), d: 'ângulo de saída=' + a.toFixed(1) + '°' };
+  });
+  T('Tabela: efeito lateral esq/dir altera o ângulo de saída', () => {
+    const out = w => { const [b] = ph.setup([roll(1, 150, 280, 300, 300, { wz: w })]); ph.run(1.5, () => { if (b.vy < 0) return false; }); return deg(Math.atan2(-b.vy, b.vx)); };
+    const l = out(-120), r = out(120);
+    return { ok: Math.abs(l - r) > 4, d: 'esq=' + l.toFixed(1) + '° dir=' + r.toFixed(1) + '°' };
+  });
+  T('Squirt: a bola desvia-se ≈ 0,028 rad para o lado oposto ao efeito', () => {
+    const ang = s => { const [c] = ph.setup([B(0, 200, 198)]); ph.hit(0, 0.5, 0, s); return Math.atan2(c.vy, c.vx); };
+    const l = ang(-1), r = ang(1);
+    return { ok: near(Math.abs(l), 0.028, 0.004) && near(Math.abs(r), 0.028, 0.004) && l * r < 0, d: 'esq=' + l.toFixed(4) + ' dir=' + r.toFixed(4) + ' rad' };
+  });
+  T('Massé: taco elevado faz a bola curvar; sem elevação segue direita', () => {
+    const lat = el => { const [c] = ph.setup([B(0, 100, 198)]); ph.hit(0, 0.45, 0, 1, el); const a = Math.atan2(c.vy, c.vx), x0 = c.x, y0 = c.y; ph.steps(180); const dx = c.x - x0, dy = c.y - y0; return Math.abs(-Math.sin(a) * dx + Math.cos(a) * dy); };
+    const s = lat(0), m = lat(0.8);
+    return { ok: s < 4 && m > 12, d: 'desvio sem massé=' + s.toFixed(1) + 'px com massé=' + m.toFixed(1) + 'px' };
+  });
+  T('Caçapa: bola lenta apontada ao centro da caçapa cai', () => {
+    const bs = ph.setup([roll(1, 200, 200, -400, -400)]);
+    const pot = []; ph.run(3); return { ok: !bs[0].alive, d: 'alive=' + bs[0].alive };
+  });
+  T('Caçapa: bola rente à tabela entra na caçapa do canto (jaws não a prendem)', () => {
+    const [b] = ph.setup([roll(1, 300, ph.T + R, -500, 0)]); ph.run(3);
+    return { ok: !b.alive, d: 'alive=' + b.alive + ' x=' + b.x.toFixed(1) };
+  });
+  T('Caçapa: bola rápida (1500 px/s) apontada ao centro cai', () => {
+    const [b] = ph.setup([roll(1, 300, 300, -1500 * Math.SQRT1_2, -1500 * Math.SQRT1_2)]); const pk = ph.POCKETS[0];
+    const dx = pk.x - 300, dy = pk.y - 300, l = Math.hypot(dx, dy); b.vx = dx / l * 1500; b.vy = dy / l * 1500; b.wy = b.vx / R; b.wx = -b.vy / R; ph.run(2);
+    return { ok: !b.alive, d: 'alive=' + b.alive };
+  });
+  T('Boca da caçapa: bola que entra pela boca cai; a que bate na tabela logo a seguir à ponta ressalta', () => {
+    const go = ty => { const sx = 160, sy = 200, tx = 36, dx = tx - sx, dy = ty - sy, l = Math.hypot(dx, dy); const [b] = ph.setup([roll(1, sx, sy, dx / l * 600, dy / l * 600)]); ph.run(1.5); return b; };
+    const dentro = go(48), fora = go(70);
+    return { ok: !dentro.alive && fora.alive, d: 'boca: alive=' + dentro.alive + ', tabela: alive=' + fora.alive };
+  });
+  T('Pontas (jaws): bola que bate de frente na ponta da tabela ressalta e continua na mesa', () => {
+    const j = ph.JAWS.find(q => q.x > 300 && q.y === ph.T);        // ponta junto à caçapa do meio, em cima
+    const [b] = ph.setup([roll(1, j.x, 200, 0, -700)]); let minD = 1e9; ph.run(1.2, () => { minD = Math.min(minD, Math.hypot(b.x - j.x, b.y - j.y)); });
+    return { ok: b.alive && minD >= R - 0.01, d: 'distância mínima à ponta=' + minD.toFixed(2) + ' (≥ ' + R + ') alive=' + b.alive };
+  });
+  T('snap/restoreSnap repõe posição, velocidade e rotação (wx, wy, wz)', () => {
+    const bs = ph.setup([B(0, 100, 198), B(1, 300, 205), B(2, 330, 190)]); ph.hit(0.02, 0.8, 0.7, 0.7);
+    const s = P.sb.snap(), before = JSON.stringify(bs.map(b => [b.x, b.y, b.vx, b.vy, b.wx, b.wy, b.wz, b.alive]));
+    ph.steps(60); P.sb.restoreSnap(s);
+    return { ok: JSON.stringify(bs.map(b => [b.x, b.y, b.vx, b.vy, b.wx, b.wy, b.wz, b.alive])) === before, d: 'round-trip' };
+  });
+  T('Registo da tacada: primeira bola tocada, tabela depois do contacto e bolas metidas', () => {
+    const bs = ph.setup([B(0, 400, 198), B(1, 460, 198), B(2, 250, 100)]); ph.hit(0, 0.6, 0, 0); ph.run(6); const sh = ph.shot;
+    return { ok: sh.first === 1 && sh.railAfter === true && sh.railBalls.includes(1), d: 'first=' + sh.first + ' railAfter=' + sh.railAfter + ' rails=' + sh.railBalls };
+  });
+  T('simulate() da IA não altera o estado do jogo', () => {
+    P.seed = 5; P.newGame('2p'); P.firstBreak = false; const s0 = JSON.stringify(P.phys.balls.map(b => [b.x, b.y, b.vx, b.vy, b.wx, b.wy, b.wz, b.alive]));
+    const pr = { legal: [1, 2, 3, 4, 5, 6, 7], cleared: false, hadGroup: false, breakShot: false, called: null };
+    const sc = P.simulate(0, 0.02, 0.8, pr);
+    return { ok: JSON.stringify(P.phys.balls.map(b => [b.x, b.y, b.vx, b.vy, b.wx, b.wy, b.wz, b.alive])) === s0 && typeof sc === 'number' && !P.phys.anyMoving(), d: 'score=' + sc };
+  });
+  T('Colisão contínua: bola a 1900 px/s não atravessa outra bola nem a tabela', () => {
+    const [a, b] = ph.setup([roll(0, 100, 198, 1900, 0), B(1, 400, 198)]);
+    let maxB = 0, aAt = null; ph.run(0.4, () => { maxB = Math.max(maxB, b.vx); if (aAt === null && b.vx > 1000) aAt = a.vx; });
+    const [c] = ph.setup([roll(0, 600, 198, 1900, 0)]); let mx = 0; ph.run(0.2, () => { mx = Math.max(mx, c.x); });
+    return { ok: maxB > 1700 && aAt !== null && Math.abs(aAt) < 150 && mx <= ph.Rr - R + 0.01, d: 'alvo vx máx=' + maxB.toFixed(0) + ' branca vx=' + (aAt === null ? 'n/a' : aAt.toFixed(0)) + ' xmáx=' + mx.toFixed(2) };
+  });
+  T('Bola rápida entre duas bolas coladas não passa', () => {
+    const [a, b, c] = ph.setup([roll(0, 100, 198, 1900, 0), B(1, 300, 198 - R * 1.001), B(2, 300, 198 + R * 1.001)]);
+    ph.run(0.5); return { ok: a.x < 330 || b.vx > 100, d: 'a.x=' + a.x.toFixed(0) + ' b.vx=' + b.vx.toFixed(0) };
+  });
+  T('Repouso sem tremor: rack parado durante 3 s não mexe (<0,001 px)', () => {
+    const list = [B(0, 196, 198)]; const dx = R * 2 * 1.002, rdx = Math.sqrt(3) * R * 1.002; let n = 1;
+    for (let r = 0; r < 5; r++) for (let c = 0; c <= r; c++) list.push(B(n++, 486 + r * rdx, 198 + (c - r / 2) * dx));
+    const bs = ph.setup(list), p0 = bs.map(b => [b.x, b.y]); ph.steps(720);
+    const m = Math.max(...bs.map((b, i) => Math.hypot(b.x - p0[i][0], b.y - p0[i][1])));
+    return { ok: m < 0.001, d: 'deslocamento máx=' + m.toExponential(2) };
+  });
+  T('Bola encostada à tabela fica quieta', () => {
+    const [b, c] = ph.setup([B(1, ph.L + R, 198), B(2, ph.L + R, 198 + 2 * R)]); ph.steps(480);
+    return { ok: Math.hypot(b.vx, b.vy) === 0 && near(b.x, ph.L + R, 0.001), d: 'x=' + b.x.toFixed(4) };
+  });
+  T('Simetria: tacada espelhada dá resultado espelhado (±0,05 px)', () => {
+    const play = m => { const bs = ph.setup([B(0, 300, 198 + m * 20), B(1, 420, 198 + m * 4), B(2, 440, 198 + m * 25)]); ph.hit(m * rad(-1.5), 0.8, 0, 0); ph.run(8); return bs.map(b => [b.x, b.y]); };
+    const a = play(1), b = play(-1); let e = 0;
+    a.forEach((p, i) => { e = Math.max(e, Math.abs(p[0] - b[i][0]), Math.abs(p[1] + b[i][1] - 396)); });
+    return { ok: e < 0.05, d: 'erro máx=' + e.toFixed(4) };
+  });
+  T('Semente: mesma semente → mesmo rack; sementes diferentes → racks diferentes', () => {
+    const snap = seed => { P.seed = seed; P.newGame('2p'); return P.sb.cue && P.phys.balls.map(b => b.n + ':' + Math.round(b.x) + ',' + Math.round(b.y)).join('|'); };
+    const a = snap(123), b = snap(123), c = snap(777), d = snap(4242);
+    return { ok: a === b && (a !== c || a !== d), d: (a === b ? 'repetível' : 'DIFERENTE') + (a !== c ? ', 123≠777' : '') };
+  });
+  T('Stress: 400 tacadas aleatórias, sem NaN, dentro da mesa e todas param', () => {
+    P.seed = 99; let bad = '', stuck = 0;
+    for (let k = 0; k < 400 && !bad; k++) {
+      const list = [B(0, 100 + P.rnd() * 500, 60 + P.rnd() * 280)];
+      for (let i = 1; i <= 8; i++) list.push(B(i, 60 + P.rnd() * 620, 60 + P.rnd() * 280));
+      const bs = ph.setup(list); ph.hit(P.rnd() * 6.28, 0.2 + P.rnd() * 0.8, (P.rnd() - 0.5) * 2, (P.rnd() - 0.5) * 2, P.rnd() < 0.2 ? P.rnd() : 0);
+      const t = ph.run(40); if (t >= 39.9) stuck++;
+      for (const b of bs) if (b.alive && (!isFinite(b.x) || !isFinite(b.y) || b.x < ph.L || b.x > ph.Rr || b.y < ph.T || b.y > ph.B)) { bad = 'bola fora em ' + k + ': ' + b.x.toFixed(1) + ',' + b.y.toFixed(1); break; }
+    }
+    return { ok: !bad && stuck === 0, d: bad || ('presas: ' + stuck) };
+  });
+
+  const rows = document.getElementById('t'); let pass = 0;
+  tests.forEach((t, i) => {
+    let r; try { r = t.fn(); } catch (e) { r = { ok: false, d: 'ERRO ' + e.message }; }
+    if (r.ok) pass++; results.push({ name: t.name, ok: r.ok, detail: r.d });
+    const tr = document.createElement('tr'); tr.innerHTML = '<td>' + (i + 1) + '</td><td></td><td class="' + (r.ok ? 'PASS' : 'FAIL') + '">' + (r.ok ? 'PASS' : 'FAIL') + '</td><td></td>';
+    tr.children[1].textContent = t.name; tr.children[3].textContent = r.d; rows.appendChild(tr);
+  });
+  window.__summary = { pass, total: tests.length };
+  document.getElementById('sum').textContent = (pass === tests.length ? 'TUDO PASS' : 'HÁ FALHAS') + ' — ' + pass + '/' + tests.length;
+  document.title = (pass === tests.length ? 'PASS ' : 'FAIL ') + pass + '/' + tests.length;
+}
+frame.addEventListener('load', () => { const t0 = Date.now(); const w = setInterval(() => { const P = frame.contentWindow.__pool; if (P && P.phys) { clearInterval(w); try { run(P); } catch (e) { document.getElementById('sum').textContent = 'ERRO: ' + e.message; } } else if (Date.now() - t0 > 8000) { clearInterval(w); document.getElementById('sum').textContent = 'window.__pool não encontrado (precisa de ?debug)'; } }, 100); });
+</script>
+</body>
+</html>
