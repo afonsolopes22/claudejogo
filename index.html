@@ -320,7 +320,7 @@ pt: {
   'ui.you': "Tu", 'ui.cpu': "CPU", 'ui.p1': "Jogador 1", 'ui.p2': "Jogador 2",
   'hud.force': "FORÇA", 'hud.open': "Mesa aberta", 'hud.solids': "Lisas", 'hud.stripes': "Riscadas", 'hud.challenge': "Desafio {n}", 'hud.shot': "Tacada {a}/{b}", 'hud.goal': "Objetivo", 'hud.par': "par {n}",
   'menu.play': "Jogar", 'menu.chal': "Desafios", 'menu.tour': "Torneio", 'menu.p2': "2 Jogadores", 'menu.missions': "Missões", 'menu.shop': "Loja", 'menu.daily': "Diário",
-  'menu.chest': "Baú grátis", 'menu.how': "Como jogar", 'menu.privacy': "Privacidade", 'menu.video': "+150 ({n})", 'menu.lvl': "Nível {l} · {title} · Vitórias: {w} · Derrotas: {d}",
+  'menu.chest': "Baú grátis", 'ai.style': "Estilo do CPU: {s}", 'ai.agg': "Agressivo", 'ai.def': "Defensivo", 'ai.bal': "Equilibrado", 'menu.how': "Como jogar", 'menu.privacy': "Privacidade", 'menu.video': "+150 ({n})", 'menu.lvl': "Nível {l} · {title} · Vitórias: {w} · Derrotas: {d}",
   'rooms.title': "Escolhe a sala", 'room.bairro': "Bairro", 'room.club': "Clube", 'room.pro': "Profissional", 'room.master': "Mestre",
   'rooms.free': "Inscrição GRÁTIS · Recompensa 🪙{p} · 1.ª partida fácil", 'rooms.unlock1': "Termina a 1.ª partida para desbloquear", 'rooms.unlockLv': "Desbloqueia no nível {n}",
   'rooms.info': "Inscrição 🪙{f} · Recompensa 🪙{p}", 'rooms.play': "Jogar", 'rooms.noCoins': "Sem moedas. Ver um vídeo para ganhar 150 moedas?",
@@ -383,7 +383,7 @@ en: {
   'ui.you': "You", 'ui.cpu': "CPU", 'ui.p1': "Player 1", 'ui.p2': "Player 2",
   'hud.force': "POWER", 'hud.open': "Open table", 'hud.solids': "Solids", 'hud.stripes': "Stripes", 'hud.challenge': "Challenge {n}", 'hud.shot': "Shot {a}/{b}", 'hud.goal': "Goal", 'hud.par': "par {n}",
   'menu.play': "Play", 'menu.chal': "Challenges", 'menu.tour': "Tournament", 'menu.p2': "2 Players", 'menu.missions': "Missions", 'menu.shop': "Shop", 'menu.daily': "Daily",
-  'menu.chest': "Free chest", 'menu.how': "How to play", 'menu.privacy': "Privacy", 'menu.video': "+150 ({n})", 'menu.lvl': "Level {l} · {title} · Wins: {w} · Losses: {d}",
+  'menu.chest': "Free chest", 'ai.style': "CPU style: {s}", 'ai.agg': "Aggressive", 'ai.def': "Defensive", 'ai.bal': "Balanced", 'menu.how': "How to play", 'menu.privacy': "Privacy", 'menu.video': "+150 ({n})", 'menu.lvl': "Level {l} · {title} · Wins: {w} · Losses: {d}",
   'rooms.title': "Choose a room", 'room.bairro': "Neighborhood", 'room.club': "Club", 'room.pro': "Professional", 'room.master': "Master",
   'rooms.free': "FREE · Reward 🪙{p} · easy 1st match", 'rooms.unlock1': "Finish your 1st match to unlock", 'rooms.unlockLv': "Unlocks at level {n}",
   'rooms.info': "Fee 🪙{f} · Reward 🪙{p}", 'rooms.play': "Play", 'rooms.noCoins': "Out of coins. Watch a video to earn 150 coins?",
@@ -981,6 +981,8 @@ function newGame(m, rm) {
   fMul = curCloth().fr;
   turn = 0; groups = [null, null]; ballInHand = false; firstBreak = true; mstat = { pots: 0, run: 0, maxRun: 0, opp: 0 };
   aimAngle = 0; power = 0; shot = null; pre = null;
+  aiPersona = ['bal', 'bal']; cpuSpin = { top: 0, side: 0 };
+  if (m === 'cpu' && !easyCpu) { aiPersona[1] = pickPersona(); if (autoPlay) aiPersona[0] = pickPersona(); }
   $('n0').textContent = m === 'cpu' ? tr('ui.you') : tr('ui.p1');
   $('n1').textContent = m === 'cpu' ? tr('ui.cpu') : tr('ui.p2');
   document.querySelectorAll('.overlay').forEach(o => { if (o.id !== 'adov') o.classList.remove('show'); });
@@ -988,6 +990,7 @@ function newGame(m, rm) {
   updateHud(); Monet.banner(false);
   startTurn(tr('g.open'));
   tut = null; if (!save.tutDone || tutForce) startTut(); tutForce = false;
+  if (m === 'cpu' && !easyCpu && !autoPlay) { const g = gameId; setTimeout(() => { if (g === gameId && mode === 'cpu' && state !== 'over' && !tut) toast(tr('ai.style', { s: tr('ai.' + aiPersona[1]) })); }, 2200); }   // o estilo do adversário
 }
 
 const isCpuTurn = () => mode === 'cpu' && (turn === 1 || autoPlay);
@@ -1310,7 +1313,7 @@ function fire(angle, pw, call) {
   const cpu = isCpuTurn(), sp = cpu ? 0 : curCue().spin;
   // o ponto de impacto vem do círculo de efeito: até 70% do raio é efeito normal; o anel exterior eleva o taco (massé)
   const r = Math.hypot(spin.x, spin.y), rr = Math.min(r, 0.7) / 0.7, elev = r > 0.7 ? Math.min(1, (r - 0.7) / 0.15) * 0.9 : 0;
-  const top = cpu || !r ? 0 : spin.y / r * rr * sp, side = cpu || !r ? 0 : spin.x / r * rr * sp;
+  const top = cpu ? cpuSpin.top : !r ? 0 : spin.y / r * rr * sp, side = cpu ? cpuSpin.side : !r ? 0 : spin.x / r * rr * sp;
   // o taco recua (já mostrado pela barra), avança depressa e só no impacto a bola sai (ver frame())
   strike = { ang: angle, pw, pull0: 14 + pw * 70, t: 0, dur: 0.14 - 0.06 * pw, launched: false, fade: 0, cx: cue.x, cy: cue.y,
     args: [angle, pw, cpu ? 1 : curCue().power, top, side, cpu ? 0 : elev] };
@@ -1494,6 +1497,20 @@ function autoCall(angle) {
 }
 
 // ---------- CPU ----------
+// Perfis por nível de sala (0 Bairro … 3 Mestre): quantas tacadas avalia, tempo de pensamento, efeito, planeamento, segurança e lapsos.
+const AI_LV = [
+  { N: 0,  ms: 0,   spin: 0, plan: 0, safe: 0,   lapse: 0.14 },
+  { N: 6,  ms: 110, spin: 0, plan: 0, safe: 0.5, lapse: 0.07 },
+  { N: 10, ms: 170, spin: 1, plan: 1, safe: 1,   lapse: 0.03 },
+  { N: 12, ms: 230, spin: 2, plan: 2, safe: 1.2, lapse: 0.01 },
+];
+// Personalidades (sorteadas por partida): risco = valor da posição para a tacada seguinte; safe = peso das tacadas de segurança; pw = força; err = erro de execução
+const PERSONAS = { bal: { risk: 1, safe: 1, pw: 1, err: 1 }, agg: { risk: 1.3, safe: 0.5, pw: 1.12, err: 1.15 }, def: { risk: 0.8, safe: 1.7, pw: 0.92, err: 0.88 } };
+let aiPersona = ['bal', 'bal'], aiTimes = [];
+const pickPersona = () => { const r = rnd(); return r < 0.34 ? 'agg' : r < 0.67 ? 'def' : 'bal'; };
+const gauss = () => { let u = 0; while (!u) u = rnd(); return Math.max(-2.5, Math.min(2.5, Math.sqrt(-2 * Math.log(u)) * Math.cos(6.2831853 * rnd()))); };
+let cpuSpin = { top: 0, side: 0 };
+
 function segDist(px, py, ax, ay, bx, by) {
   const abx = bx - ax, aby = by - ay, l2 = abx * abx + aby * aby;
   let t = l2 ? ((px - ax) * abx + (py - ay) * aby) / l2 : 0;
@@ -1516,7 +1533,7 @@ function geoCands(me) {                         // tacadas diretas (bola -> caç
         if (segDist(o.x, o.y, cue.x, cue.y, gx, gy) < BR * 1.9) return;
         if (segDist(o.x, o.y, b.x, b.y, pk.x, pk.y) < BR * 1.9) return;
       }
-      out.push({ score: d + (1 - dot) * 500 + ul * 0.6, ang: Math.atan2(vy, vx), pw: Math.min(0.9, Math.max(0.35, 0.3 + (d + ul) / 1100)), pi });
+      out.push({ score: d + (1 - dot) * 500 + ul * 0.6, ang: Math.atan2(vy, vx), pw: Math.min(0.9, Math.max(0.35, 0.3 + (d + ul) / 1100)), pi, cut: 1 - dot, d, ul, n: b.n });
     });
   }
   return out.sort((a, b) => a.score - b.score);
@@ -1524,11 +1541,36 @@ function geoCands(me) {                         // tacadas diretas (bola -> caç
 function snap() { return [balls.map(b => [b.x, b.y, b.vx, b.vy, b.alive, b.wx, b.wy, b.wz]), [cue.top, cue.side, cue.touched, cue.dx, cue.dy]]; }
 function restoreSnap(s) { balls.forEach((b, i) => { [b.x, b.y, b.vx, b.vy, b.alive, b.wx, b.wy, b.wz] = s[0][i]; }); [cue.top, cue.side, cue.touched, cue.dx, cue.dy] = s[1]; }
 
-// Simula a tacada (sem som) e devolve uma pontuação do ponto de vista de `me`.
-function simulate(me, ang, pw, pr) {
+// qualidade (0..1) da melhor tacada direta que sobra a quem joga a seguir
+const qOf = g => g.length ? Math.max(0, Math.min(1, (900 - g[0].score) / 900)) : 0;
+// Planeamento: valor da posição em que a branca fica. Se continuo a jogar: quão boa é a próxima tacada (2.ª tacada simulada de verdade no nível Mestre).
+// Se passo a vez: quão fácil deixo a vida ao adversário (segurança).
+function lookahead(me, sh, res, pr, opt) {
+  const sg0 = groups[0], sg1 = groups[1];
+  if (res.assign && !pr.hadGroup) { groups[me] = res.assign; groups[1 - me] = res.assign === 'solid' ? 'stripe' : 'solid'; }
+  let out = 0;
+  if (res.keep && !res.foul) {
+    if (cue.alive) {
+      const g = geoCands(me); out += 110 * qOf(g) * (opt.risk || 1);
+      if (opt.deep && g.length) {
+        const pr2 = makePre(me, null); let b2 = -1e9;
+        for (const c of g.slice(0, 2)) b2 = Math.max(b2, simulate(me, c.ang, c.pw, { ...pr2, called: needsCall(me) ? c.pi : null }));
+        out += 0.4 * Math.max(-300, Math.min(300, b2));
+      }
+    }
+  } else if (!res.foul) {
+    out -= 150 * (cue.alive ? qOf(geoCands(1 - me)) : 1) * (opt.safe == null ? 1 : opt.safe);
+  }
+  groups[0] = sg0; groups[1] = sg1;
+  return out;
+}
+
+// Simula a tacada (sem som) e devolve uma pontuação do ponto de vista de `me`. opt: { top, side, plan, deep, risk, safe }
+function simulate(me, ang, pw, pr, opt) {
+  opt = opt || {};
   const s = snap(), savedShot = shot, savedAuto = autoPlay;
   SIM = true; shot = newShot();
-  launch(ang, pw, 1, 0, 0);
+  launch(ang, pw, 1, opt.top || 0, opt.side || 0, 0);
   let n = 0;
   do { step(SUB); } while (++n < 2400 && anyMoving());
   const sh = shot, res = judge(me, sh, pr);
@@ -1542,13 +1584,17 @@ function simulate(me, ang, pw, pr) {
     if (res.keep) sc += 100;
     if (res.rerack) sc -= 50;
     sc -= pw * 5;
+    if (opt.plan) sc += lookahead(me, sh, res, pr, opt);
   }
   SIM = false; shot = savedShot; autoPlay = savedAuto; restoreSnap(s);
   return sc;
 }
 
 function cpuDecide() {
+  const t00 = performance.now();
   const me = turn, sk = autoPlay && me === 0 && humanSkill ? humanSkill : null, lvl = sk ? sk.ai : easyCpu ? 0 : room.ai;
+  const LV = AI_LV[lvl], pers = PERSONAS[aiPersona[me]] || PERSONAS.bal;
+  const noise = sk ? (sk.noise != null ? sk.noise : 0.04) : easyCpu ? 0.3 : room.noise, lapse = (sk && sk.lapse != null ? sk.lapse : room && room.lapse != null && !sk ? room.lapse : LV.lapse) * pers.err;
   if (ballInHand) {
     let bestSpot = null, bs = 1e9;
     const K = lvl === 0 ? 1 : [0, 8, 14, 24][lvl];
@@ -1556,7 +1602,7 @@ function cpuDecide() {
       const x = L + 40 + rnd() * ((lvl === 0 ? 316 : 556) - (L + 40)), y = T + 40 + rnd() * (B - T - 80);   // bola na mão: zona de trás da linha de cabeça (nível 0) ou quase toda a mesa
       if (!freeSpot(x, y)) continue;
       k++; cue.x = x; cue.y = y;
-      const g = lvl === 0 ? [] : geoCands(me), sc = g.length ? g[0].score : 5000;
+      const g = lvl === 0 ? [] : geoCands(me), sc = g.length ? g[0].score - (lvl >= 2 ? 40 * Math.min(3, g.length - 1) : 0) : 5000;
       if (sc < bs) { bs = sc; bestSpot = { x, y }; }
     }
     if (bestSpot) { cue.x = bestSpot.x; cue.y = bestSpot.y; } else { const sp = nearestFree(HEAD_X, H / 2); cue.x = sp.x; cue.y = sp.y; }
@@ -1564,36 +1610,61 @@ function cpuDecide() {
   }
   const cands = geoCands(me), targets = legalTargets(me), call = needsCall(me);
   let best = null;
-  if (lvl === 0) { if (cands.length) best = cands[0]; }
-  else if (!firstBreak) {
-    const prBase = makePre(me, null), N = [0, 6, 12, 20][lvl], list = [];
-    for (const c of cands.slice(0, N)) {
+  const nearest = [...targets].sort((a, b) => Math.hypot(a.x - cue.x, a.y - cue.y) - Math.hypot(b.x - cue.x, b.y - cue.y));
+  if (lvl === 0) {
+    if (cands.length) best = cands[0];
+    if (best && rnd() < lapse) best = cands[Math.min(cands.length - 1, 1 + (rnd() * 2 | 0))];       // lapso: não escolhe a melhor
+  } else if (!firstBreak) {
+    const prBase = makePre(me, null), direct = [], safeL = [], spinL = [];
+    const pwK = pers.pw;
+    for (const c of cands.slice(0, LV.N)) {
       const pws = lvl === 1 ? [c.pw] : lvl === 2 ? [c.pw, Math.min(1, c.pw * 1.25)] : [c.pw * 0.8, c.pw, Math.min(1, c.pw * 1.25)];
-      for (const pw of pws) list.push({ ang: c.ang, pw, pi: c.pi });
+      for (const pw of pws) direct.push({ ang: c.ang, pw: Math.max(0.2, Math.min(1, pw * pwK)), pi: c.pi, cut: c.cut, d: c.d, ul: c.ul });
     }
-    let nb = null, nd = 1e9;                    // tacadas de segurança: toca a bola legal mais próxima suavemente
-    for (const b of targets) { const d = Math.hypot(b.x - cue.x, b.y - cue.y); if (d < nd) { nd = d; nb = b; } }
-    if (nb) { const a = Math.atan2(nb.y - cue.y, nb.x - cue.x); list.push({ ang: a, pw: 0.3, pi: null }, { ang: a, pw: 0.5, pi: null }); }
-    const t0 = performance.now(); let bsc = -1e9;
+    for (const b of nearest.slice(0, 3)) {                                  // tacadas de segurança: toca suavemente numa bola legal
+      const a = Math.atan2(b.y - cue.y, b.x - cue.x);
+      for (const pw of [0.25, 0.4, 0.55]) safeL.push({ ang: a, pw, pi: null, cut: 0, d: Math.hypot(b.x - cue.x, b.y - cue.y), ul: 200, safe: true });
+    }
+    if (LV.spin >= 1) for (const c of cands.slice(0, 3)) for (const top of [0.7, -0.7]) spinL.push({ ang: c.ang, pw: Math.min(1, c.pw * pwK), pi: c.pi, cut: c.cut, d: c.d, ul: c.ul, top, side: 0 });
+    if (LV.spin >= 2) for (const c of cands.slice(0, 2)) for (const side of [0.5, -0.5]) spinL.push({ ang: c.ang, pw: Math.min(1, c.pw * pwK), pi: c.pi, cut: c.cut, d: c.d, ul: c.ul, top: 0, side });
+    const list = [];                                                         // intercala para que segurança e efeito também sejam avaliados se o tempo acabar cedo
+    for (let i = 0; i < Math.max(direct.length, safeL.length, spinL.length); i++) for (const L2 of [direct, safeL, spinL]) if (i < L2.length) list.push(L2[i]);
+    const t0 = performance.now(), scored = [];
+    const opt = (c, deep) => ({ top: c.top || 0, side: c.side || 0, plan: LV.plan >= 1, deep, risk: pers.risk, safe: LV.safe * pers.safe });
     for (const c of list) {
-      if (performance.now() - t0 > 260) break;
-      const sc = simulate(me, c.ang, c.pw, { ...prBase, called: call ? c.pi : null });
-      if (sc > bsc) { bsc = sc; best = c; }
+      if (performance.now() - t0 > LV.ms) break;
+      scored.push({ c, sc: simulate(me, c.ang, c.pw, { ...prBase, called: call ? c.pi : null }, opt(c, false)) });
+    }
+    scored.sort((a, b) => b.sc - a.sc);
+    if (LV.plan >= 2) {                                                     // Mestre: reavalia as 3 melhores com a 2.ª tacada simulada
+      for (const e of scored.slice(0, 3)) { if (performance.now() - t0 > LV.ms * 1.4) break; e.sc = simulate(me, e.c.ang, e.c.pw, { ...prBase, called: call ? e.c.pi : null }, opt(e.c, true)); }
+      scored.sort((a, b) => b.sc - a.sc);
+    }
+    if (scored.length) {
+      best = scored[0].c;
+      if (rnd() < lapse) {                                                  // lapso: escolhe outra opção razoável (nunca uma derrota/falta clara)
+        const alt = scored.slice(1).filter(e => e.sc > scored[0].sc - 250 && e.sc > -5000 && Math.abs(wrapA(e.c.ang - best.ang)) > 0.01);
+        if (alt.length) best = alt[rnd() * Math.min(2, alt.length) | 0].c;
+      }
     }
   }
   if (firstBreak) { const hb = balls.find(b => b.alive && b.n > 0 && b.x > APEX_X - 1 && b.x < APEX_X + 1); if (hb) best = { ang: Math.atan2(hb.y - cue.y, hb.x - cue.x), pw: 1, pi: null }; }   // abertura: força máxima na bola da frente
   if (!best) {                                  // sem tacada limpa: bate na bola legal mais próxima
-    let nb = null, nd = 1e9;
-    for (const b of targets) { const d = Math.hypot(b.x - cue.x, b.y - cue.y); if (d < nd) { nd = d; nb = b; } }
-    best = { ang: nb ? Math.atan2(nb.y - cue.y, nb.x - cue.x) : 0, pw: 0.55, pi: null };
+    const nb = nearest[0];
+    best = { ang: nb ? Math.atan2(nb.y - cue.y, nb.x - cue.x) : 0, pw: 0.55, pi: null, safe: true };
   }
-  let ang = best.ang + (rnd() - 0.5) * (sk ? sk.noise : easyCpu ? 0.3 : room.noise) * 2;
-  let pw = Math.min(1, best.pw * (0.93 + rnd() * 0.14));
+  // erro de execução humano: cresce com o corte, a distância e a pressão (bola 8)
+  const cut = best.cut || 0, dist = ((best.d || 300) + (best.ul || 200)) / 1200, pressure = call ? (lvl >= 3 ? 1.1 : 1.25) : 1;
+  const sigma = noise * 0.58 * (0.5 + 1.2 * cut + 0.8 * dist) * pers.err * pressure;
+  let ang = best.ang + gauss() * sigma;
+  let pw = Math.max(0.12, Math.min(1, best.pw * (1 + gauss() * (0.02 + noise * 0.5))));
   if (firstBreak) pw = 0.97 + rnd() * 0.03;
   if (easyCpu && rnd() < 0.65) { ang += (rnd() - 0.5) * 1.4; pw = 0.2 + rnd() * 0.6; }   // falha de propósito
   let da = ang - aimAngle; while (da > Math.PI) da -= 2 * Math.PI; while (da < -Math.PI) da += 2 * Math.PI;
+  cpuSpin = { top: best.top || 0, side: best.side || 0 };
   cpuS = { ph: 'aim', t: 0, from: aimAngle, da, pw, call: call ? best.pi : null };
   if (call) called = best.pi;
+  aiTimes.push(performance.now() - t00); if (aiTimes.length > 400) aiTimes.shift();
 }
 function cpuTick(dt) {
   const s = cpuS; if (!s) return;
@@ -2218,6 +2289,7 @@ if (/[?&]debug\b/.test(location.search) || (() => { try { return !!localStorage.
   get state() { return state; }, get balls() { return balls; }, get turn() { return turn; }, get groups() { return groups; },
   toMenu, open, tr, setLang(l) { if (!I18N[l]) return; LANG = l; save.lang = l; persist(); applyI18n(); renderOffer(); updateHud(); refreshCoins(); updateMuteBtn(); }, I18N,
   fire, newGame, judge, simulate, rooms: ROOMS, save, Snd, CUES, CLOTHS, TABLES, maybeOffer, aimMax, confettiBurst, startChal, CHALLENGES, TOUR, ACH, lvlInfo,
+  get aiTimes() { return aiTimes; }, set aiPersonaKey(k) { aiPersona = [k, k]; }, get aiPersonaKey() { return aiPersona.slice(); }, AI_LV, PERSONAS,
   get seed() { return rngS; }, set seed(v) { rngS = v >>> 0; }, rnd,
   phys: { PH, BR, L, Rr, T, B, MIDX, POCKETS, JAWS, SUB, MAX_SPEED, GRAV, get balls() { return balls; },
     setup(list) { balls = list.map(o => Object.assign(o.n === 0 ? newCue(o.x, o.y) : mk(o.n, o.x, o.y), o)); cue = balls.find(b => b.n === 0) || null; shot = newShot(); fMul = 1; return balls; },
