@@ -4,7 +4,7 @@ Ordem recomendada. Marca cada caixa quando estiver feito.
 
 ---
 
-> ⚠️ **Não publiques a política de privacidade nem submetas a app antes de implementares o consentimento GDPR (UMP) e o pedido ATT.** `privacy.html` descreve esse comportamento, que o código ainda **não** tem (ver ponto 4). Preenche também os campos `[…]` do `privacy.html` (nome do programador, data, email, e na versão inglesa o nome do jogo).
+> ⚠️ **Antes de publicares a política de privacidade:** preenche os campos `[…]` do `privacy.html` (nome do programador, data, email). O consentimento GDPR (UMP) e o pedido ATT já estão implementados no código (`Consent` em `js/core.js`), mas **só foram testados com um AdMob simulado**: falta confirmá-los num iPhone real (ponto 7).
 
 ## 0. Guardar o trabalho (agora, no teu PC)
 - [ ] `git push origin mega-jogo`
@@ -38,7 +38,7 @@ Isso sobe a idade mínima e afasta jogadores.
 - [x] Ícone 1024 sem moldura quadrada; imagens da loja em paisagem 2796×1290 (capturas reais do jogo, sem legendas que prometam o que não se vê)
 - [x] Scripts em `tools/` (ícones, imagens da loja, mesas semanais, solver, testes) e `tests/physics.html` (33 testes de física)
 - [ ] **Remover o bloco de depuração do build nativo**: em `js/main.js`, o objeto `window.__pool = {...}` só existe com `?debug` ou `localStorage.pool8_debug`. No build para a loja apaga esse bloco (ou garante que nunca há `?debug`).
-- [ ] **Consentimento GDPR (UMP) e pedido ATT ainda NÃO estão implementados no código.** São obrigatórios antes de mostrar anúncios reais (ver ponto 7). Sem isto a Apple pode rejeitar a app.
+- [x] Consentimento GDPR (UMP) e pedido ATT: **implementados** (`Consent`, `js/core.js`). Falta criar a mensagem GDPR no AdMob e confirmar o fluxo num iPhone real (ver ponto 7).
 - [ ] Antes de cada publicação web, muda `CACHE` em `sw.js` (agora `cuelegends-v7`) e, se criares ficheiros novos, acrescenta-os a `ASSETS`.
 
 ## 5. Contas (só tu podes criar)
@@ -70,8 +70,8 @@ Precisas de um Mac (pode ser emprestado ou alugado na nuvem, ex. MacinCloud).
 ## 7. AdMob a sério
 - [ ] Criar a app iOS no AdMob e 3 blocos de anúncios: Banner, Intersticial e Recompensa
 - [ ] Trocar os IDs de **teste** em `Monet.ids` (`js/core.js`) pelos reais **e** pôr `ADS_TEST = false` (mesmo ficheiro), **só no build que vai para a loja**
-- [ ] **Consentimento GDPR (obrigatório em Portugal e na UE)**: no AdMob, Privacidade e mensagens, criar uma mensagem GDPR. A app tem de a mostrar antes dos anúncios (o plugin AdMob do Capacitor suporta-o com `requestConsentInfo` / `showConsentForm`).
-- [ ] Mensagem ATT da Apple (pedido de rastreio) antes de carregar anúncios (`AdMob.trackingAuthorizationStatus` / `requestTrackingAuthorization`)
+- [ ] **Consentimento GDPR (obrigatório em Portugal e na UE)**: no AdMob, Privacidade e mensagens, **criar a mensagem GDPR** (sem ela o formulário não aparece). A app já a pede antes de qualquer anúncio (`requestConsentInfo` / `showConsentForm`) e, sem consentimento válido, não pede anúncios nem dá moedas por vídeo. O botão **Definições › Privacidade e anúncios** deixa o jogador rever a escolha.
+- [ ] Mensagem ATT da Apple: **já é pedida no código**, depois do UMP e só se o consentimento permitir anúncios; se o jogador recusar, os anúncios saem não personalizados (`npa`). Confirmar num iPhone real que aparece com o texto de `NSUserTrackingUsageDescription`.
 - [ ] **Nunca clicar nos teus anúncios reais.** Para testar, usa IDs de teste ou regista o teu iPhone como dispositivo de teste.
 
 ## 8. Produtos de compra (App Store Connect → a tua app → Compras na app)

@@ -229,6 +229,61 @@ const curCue = () => CUES[save.cue] || CUES[0], curCloth = () => CLOTHS[save.clo
 if (!Array.isArray(save.tables)) save.tables = [0];
 if (!save.vid || typeof save.vid !== 'object') save.vid = { day: '', n: 0 };
 
+// ---------- Consentimento (GDPR/UMP) e rastreio (ATT da Apple) ----------
+// Só corre dentro da app (Capacitor). Nenhum anúncio é pedido antes de haver resposta; sem consentimento válido não há anúncios.
+// Ordem: UMP (formulário só onde a lei exige) -> ATT (iOS, só se ainda não foi decidido) -> inicializar AdMob.
+const Consent = {
+  canAds: false,      // a Google permite pedir anúncios
+  npa: false,         // true = anúncios não personalizados (ATT recusado ou restrito)
+  att: 'n/a',         // notDetermined | authorized | denied | restricted | n/a
+  status: 'unknown',  // UMP: NOT_REQUIRED | REQUIRED | OBTAINED | UNKNOWN | ERROR | unknown
+  privOpts: false,    // há um formulário de opções de privacidade para rever
+  ready: null, _t: 0, busy: false,
+  plugin() { try { return window.Capacitor.Plugins.AdMob || null; } catch (e) { return null; } },
+  start() { return this.ready || (this.ready = this.run()); },
+  limit(p, ms = 10000) { return Promise.race([p, new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), ms))]); },   // só para chamadas que não dependem do jogador (nunca para o formulário)
+  async ensure() {   // antes de qualquer anúncio: espera pela resposta e, se falhou (sem rede), tenta de novo no máximo 1 vez por minuto
+    await this.start();
+    if (this.status === 'ERROR' && Date.now() - this._t > 60000) { this.ready = null; await this.start(); }
+    if (this.canAds) await Monet.adsInit();
+    return this.canAds;
+  },
+  async run() {
+    this._t = Date.now();
+    const A = this.plugin(); if (!A || !Monet.native) return;
+    try {
+      let info = await this.limit(A.requestConsentInfo({ tagForUnderAgeOfConsent: false }));
+      if (info && info.isConsentFormAvailable && info.status === 'REQUIRED') info = await A.showConsentForm();
+      this.status = (info && info.status) || 'UNKNOWN';
+      this.privOpts = !!info && info.privacyOptionsRequirementStatus === 'REQUIRED';
+      this.canAds = info && typeof info.canRequestAds === 'boolean' ? info.canRequestAds : (this.status === 'OBTAINED' || this.status === 'NOT_REQUIRED');
+    } catch (e) { this.status = 'ERROR'; this.canAds = false; }
+    if (this.canAds) {
+      try {
+        let s = await this.limit(A.trackingAuthorizationStatus()); this.att = (s && s.status) || 'n/a';
+        if (this.att === 'notDetermined') { const r = await A.requestTrackingAuthorization(); this.att = (r && r.status) || this.att; }
+      } catch (e) { this.att = 'n/a'; }   // Android/web: o plugin não tem ATT
+      this.npa = this.att === 'denied' || this.att === 'restricted';
+      await Monet.adsInit();
+    }
+  },
+  async revisit() {   // botão das Definições. Devolve 'form' (apareceu um formulário), 'none' (nada a rever) ou 'off' (sem plugin)
+    const A = this.plugin(); if (!A || !Monet.native) return 'off';
+    await this.start().catch(() => {});   // nunca em paralelo com uma execução em curso
+    let shown = false;
+    try {
+      if (typeof A.showPrivacyOptionsForm === 'function') {
+        const info = await this.limit(A.requestConsentInfo({ tagForUnderAgeOfConsent: false }));
+        if (info && info.privacyOptionsRequirementStatus === 'REQUIRED') { await A.showPrivacyOptionsForm(); shown = true; }
+      } else if (this.status === 'REQUIRED' || this.status === 'OBTAINED') { await A.resetConsentInfo(); shown = true; }   // plugin sem a API oficial: volta a perguntar
+    } catch (e) {}
+    if (shown) { Monet.bannerReset(); this.ready = null; this.status = 'unknown'; this.canAds = false; await this.start(); if (this.canAds) Monet.banner(state === 'menu' || state === 'over'); }
+    return shown ? 'form' : 'none';
+  },
+  label() { return !this.canAds ? 'priv.none' : this.npa ? 'priv.npa' : 'priv.pers'; },
+  adOpts(o) { return Object.assign({}, o, { npa: this.npa }); }
+};
+
 // ---------- Monetização (anúncios + compras) ----------
 // Na web usa simulação. Dentro da app (Capacitor) usa AdMob e compras nativas.
 // IDs abaixo são os de TESTE da Google — trocar pelos teus antes de publicar (ver MONETIZACAO.md).
@@ -244,11 +299,24 @@ const Monet = {
     });
   },
   async init() {
-    if (!this.native) return;   // ADS_TEST: true = anúncios de teste do AdMob (IDs de teste). Pôr false SÓ no build de produção, junto com os IDs reais (ver PUBLICAR.md ponto 7)
-    try { const A = window.Capacitor.Plugins.AdMob; await A.initialize({ initializeForTesting: ADS_TEST }); if (!save.noAds) A.showBanner({ adId:this.ids.banner, position:'BOTTOM_CENTER', margin:0 }); } catch (e) {}
+    if (!this.native) return;
+    setTimeout(() => Consent.start(), 900);   // depois do menu aparecer (o ATT da Apple não deve cobrir o arranque) e sem esperar pela loja   // ADS_TEST: true = anúncios de teste do AdMob (IDs de teste). Pôr false SÓ no build de produção, junto com os IDs reais (ver PUBLICAR.md ponto 7)
     try { window.CdvPurchase.store.when().approved(t => { try { t.finish(); } catch (e) {} }); } catch (e) {}   // sem finish() a transação volta em cada arranque
     try { window.CdvPurchase.store.register([{ id:NOADS_ID, type:CdvPurchase.ProductType.NON_CONSUMABLE, platform:CdvPurchase.Platform.APPLE_APPSTORE }, { id:STARTER_ID, type:CdvPurchase.ProductType.NON_CONSUMABLE, platform:CdvPurchase.Platform.APPLE_APPSTORE }, ...COIN_PACKS.map(p => ({ id:p.id, type:CdvPurchase.ProductType.CONSUMABLE, platform:CdvPurchase.Platform.APPLE_APPSTORE }))]); await CdvPurchase.store.initialize(); } catch (e) {}
   },
+  _adsInit: false, _adsP: null, _bannerMade: false,
+  adsInit() {   // chamado quando já se podem pedir anúncios; uma só inicialização, quem chegar depois espera por ela
+    if (this._adsInit) return Promise.resolve();
+    return this._adsP || (this._adsP = (async () => {
+      try {
+        const A = window.Capacitor.Plugins.AdMob;
+        await A.initialize({ initializeForTesting: ADS_TEST, requestTrackingAuthorization: false });   // o ATT é pedido por nós, depois do UMP
+        this._adsInit = true; this.banner(state === 'menu' || state === 'over');
+      } catch (e) {}
+      this._adsP = null;
+    })());
+  },
+  bannerReset() { if (this._bannerMade) { try { window.Capacitor.Plugins.AdMob.removeBanner(); } catch (e) {} } this._bannerMade = false; },   // volta a criar-se com as opções novas (npa)
   // ---- política de anúncios (tudo o que decide quando mostrar anúncios está aqui) ----
   AD: { minPlaySec: 300, everyMatches: 3, minGapMs: 90000, videosPerDay: 6, doublesPerDay: 8, doubleCap: 500 },
   noteMatch() { save.adCount = (save.adCount || 0) + 1; },
@@ -282,7 +350,8 @@ const Monet = {
     this._adBusy = true;
     try {
       if (!this.native) return await this.fake(tr('ad.interstitial'), 3);
-      try { const A = window.Capacitor.Plugins.AdMob; await A.prepareInterstitial({ adId:this.ids.interstitial }); await A.showInterstitial(); } catch (e) {}
+      if (!(await Consent.ensure())) return;
+      try { const A = window.Capacitor.Plugins.AdMob; await A.prepareInterstitial(Consent.adOpts({ adId:this.ids.interstitial })); await A.showInterstitial(); } catch (e) {}
     } finally { this._adBusy = false; }
   },
   async rewarded() { // devolve true se o utilizador viu o vídeo até ao fim
@@ -291,14 +360,19 @@ const Monet = {
     try {
       let ok = false;
       if (!this.native) ok = await this.fake(tr('ad.rewarded'), 5);
-      else { try { const A = window.Capacitor.Plugins.AdMob; await A.prepareRewardVideoAd({ adId:this.ids.rewarded }); ok = !!(await A.showRewardVideoAd()); } catch (e) { ok = false; } }
+      else if (!(await Consent.ensure())) { toast(tr(Consent.status === 'ERROR' || Consent.status === 'unknown' ? 'priv.offline' : 'priv.noAds')); ok = false; }
+      else { try { const A = window.Capacitor.Plugins.AdMob; await A.prepareRewardVideoAd(Consent.adOpts({ adId:this.ids.rewarded })); ok = !!(await A.showRewardVideoAd()); } catch (e) { ok = false; } }
       if (ok) save.lastAdAt = Date.now();   // acabou de ver um anúncio: não mostrar um intersticial logo a seguir
       return ok;
     } finally { this._adBusy = false; }
   },
   banner(on) {   // chamado quando se entra/sai de uma partida; o banner web é só um espaço reservado e está sempre escondido
-    if (!this.native || save.noAds) return;
-    try { const A = window.Capacitor.Plugins.AdMob; if (on) A.resumeBanner(); else A.hideBanner(); } catch (e) {}
+    if (!this.native || save.noAds || !Consent.canAds || !this._adsInit) return;
+    try {
+      const A = window.Capacitor.Plugins.AdMob;
+      if (!this._bannerMade) { this._bannerMade = true; A.showBanner(Consent.adOpts({ adId:this.ids.banner, position:'BOTTOM_CENTER', margin:0 })); if (!on) A.hideBanner(); return; }
+      if (on) A.resumeBanner(); else A.hideBanner();
+    } catch (e) {}
   },
   busy: false,
   async buy(id) { // devolve true se a compra foi concluída (uma de cada vez)

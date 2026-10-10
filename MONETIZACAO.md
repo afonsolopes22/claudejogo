@@ -85,8 +85,8 @@ Números ajustáveis: `MISSIONS`, `DAILY`, `CHEST`, `levelBonus()`, `lvlNeed()`,
 **Privacidade e legal (exigido pela Apple)**
 - [ ] Política de privacidade com URL público.
 - [ ] Declaração de privacidade na App Store Connect (os anúncios recolhem identificadores/dados de uso).
-- [ ] Pedido ATT: `NSUserTrackingUsageDescription` no `Info.plist` + chamada de autorização antes de personalizar anúncios. **Não implementado no código ainda.**
-- [ ] Consentimento (UMP/GDPR) para utilizadores no EEE/Reino Unido, se usares anúncios personalizados. **Não implementado no código ainda.**
+- [ ] Pedido ATT: `NSUserTrackingUsageDescription` no `Info.plist` (a chamada de autorização já está no código: `Consent.run`, `js/core.js`). Testar num iPhone real.
+- [ ] Consentimento (UMP/GDPR) para utilizadores no EEE/Reino Unido: já está no código; falta criar a mensagem GDPR no AdMob e testar num iPhone real (com `debugGeography` do UMP, se quiseres simular a UE).
 - [ ] `SKAdNetworkItems` no `Info.plist` (lista do AdMob).
 - [ ] Classificação etária: responde com atenção às perguntas sobre jogos de azar simulados — o jogo tem inscrições e recompensas em moedas **virtuais**; confirma nas diretrizes da Apple (5.3) como se aplica.
 - [ ] Botão "Restaurar compras" visível (já existe, na loja → Moedas).
@@ -102,7 +102,7 @@ Números ajustáveis: `MISSIONS`, `DAILY`, `CHEST`, `levelBonus()`, `lvlNeed()`,
 - Áudio e vibração (os testes automáticos não têm som nem motor háptico; a ligação ao Capacitor Haptics foi verificada só com um simulador do plugin).
 - Partilha do GIF do replay num iPhone real (WKWebView).
 - Desempenho em telemóvel real (medido só no Edge sem ecrã: ≈ 1,5–2,0 ms de JS por frame na máquina de desenvolvimento; o loop pára quando nada se mexe).
-- ATT e consentimento GDPR (UMP): por implementar.
+- ATT e consentimento GDPR (UMP): implementados e testados só com um AdMob simulado; **nunca correram com o SDK real nem num iPhone**.
 
 ## Expectativas
 Mais anúncios não é mais dinheiro: demasiados intersticiais baixam as notas e a retenção, e a Apple rejeita apps agressivas.

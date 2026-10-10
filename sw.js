@@ -2,7 +2,7 @@
 // Estratégia: devolve logo o que está em cache e atualiza em segundo plano (a nova versão entra na visita seguinte).
 // A chave da cache ignora a query (?debug, ?utm=...), por isso todas as entradas se atualizam da mesma forma.
 // Muda CACHE quando publicares uma versão nova para forçar a limpeza da cache antiga.
-const CACHE = 'cuelegends-v7';
+const CACHE = 'cuelegends-v8';
 const ASSETS = [
   './', './index.html', './manifest.json', './css/game.css',
   './js/i18n.js', './js/core.js', './js/game.js', './js/physics.js', './js/ai.js', './js/ui.js', './js/render.js', './js/modes.js', './js/main.js',

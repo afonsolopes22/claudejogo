@@ -31,7 +31,7 @@ function rollChest() {
 $('btnChest').onclick = () => { $('chestPrize').textContent = ''; open('chest'); updateChest(); };
 $('btnChestOpen').onclick = async () => {
   if (chestLeft() > 0) return;
-  if (!(await Monet.rewarded())) return toast(tr('chest.notDone'));
+  if (!(await Monet.rewarded())) return Monet.native && !Consent.canAds ? 0 : toast(tr('chest.notDone'));
   if (chestLeft() > 0) return;
   const amt = rollChest(); save.coins += amt; save.chestAt = Date.now() + CHEST_MS; persist();
   $('chestMsg').textContent = tr('chest.got'); countUp($('chestPrize'), amt, 900, '🪙 +'); confettiBurst(); Snd.win(); updateChest();
@@ -127,12 +127,18 @@ function renderSettings() {
   $('setSound').textContent = tr('set.sound', { v: onoff(!Snd.muted) });
   $('setVib').textContent = tr('set.vib', { v: onoff(save.vib !== false) });
   $('setLefty').textContent = tr('set.lefty', { v: onoff(!!save.lefty) });
+  $('setPriv').hidden = !Monet.native;   // só existe consentimento dentro da app
+  $('setPriv').textContent = tr('set.priv', { v: tr(Consent.label()) });
   updateFxBtns();
 }
 document.querySelectorAll('#setLang button').forEach(b => b.onclick = () => setLang(b.dataset.lang));
 $('setSound').onclick = () => { Snd.init(); Snd.setMuted(!Snd.muted); updateMuteBtn(); renderSettings(); };
 $('setVib').onclick = () => { save.vib = save.vib === false; persist(); if (save.vib) vib(30); renderSettings(); };
 $('setLefty').onclick = () => { save.lefty = !save.lefty; persist(); applySettings(); renderSettings(); };
+$('setPriv').onclick = async () => {
+  if (Consent.busy) return; Consent.busy = true;
+  try { const r = await Consent.revisit(); renderSettings(); toast(tr(r === 'form' ? 'priv.done' : Consent.att === 'denied' ? 'priv.ios' : 'priv.nothing')); } finally { Consent.busy = false; }
+};
 $('btnSettings').onclick = () => { audio(); renderSettings(); open('settings'); };
 if (!save.fxSet && window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches) save.lowFx = true;   // respeita a preferência do sistema até o jogador decidir
 applySettings();
@@ -175,5 +181,5 @@ if (/[?&]debug\b/.test(location.search) || (() => { try { return !!localStorage.
     chal: (i, stars) => settleChal(i, stars),
     addXp, ensureMissions, bump, claimDaily, dailyInfo, lvlInfo, settleCpu,
     resetClock() { save.vid = { day: '', n: 0 }; save.missions = { day: '', prog: {}, done: {} }; },
-  }, set skill(v) { humanSkill = v; }, Monet, CHEST, CHEST_MS, DAILY, MISSIONS, rollChest, chestLeft, set speed(v) { TS = v; }, get room() { return room; }, set room(r) { room = r; },
+  }, set skill(v) { humanSkill = v; }, Monet, CHEST, CHEST_MS, DAILY, MISSIONS, rollChest, chestLeft, Consent, set speed(v) { TS = v; }, get room() { return room; }, set room(r) { room = r; },
 };
