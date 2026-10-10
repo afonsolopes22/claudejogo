@@ -1,4 +1,4 @@
-// Gera as 52 mesas semanais (WEEKS no index.html) com validação pelo solver. Saída: weeks.json
+// Gera as 52 mesas semanais (WEEKS em js/modes.js) com validação pelo solver. Saída: weeks.json
 // Gera 52 mesas semanais (por semente) e valida cada uma com o solver robusto (janelas >= 0,03 rad em todas as tacadas).
 // Saída: weeks.json = [{cue:[x,y], goal:[n], avoid:[n], par, max, balls:[[n,x,y],...]}, ...]
 const { chromium } = require('playwright-core');
@@ -42,7 +42,7 @@ const makeAndSolve = (src, week, tmaxLevel, seedOff) => {
 };
 
 (async () => {
-  const br = await chromium.launch({ executablePath: 'C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe', headless: true });
+  const br = await chromium.launch({ executablePath: process.env.EDGE || 'C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe', headless: true });
   const page = await (await br.newContext({ viewport: { width: 844, height: 390 } })).newPage();
   await page.goto(require("url").pathToFileURL(require("path").join(__dirname, "..", "index.html")).href + '?debug'); await page.waitForTimeout(600);
   await page.evaluate(() => { const s = window.__pool.save; s.tutDone = true; s.firstDone = true; });

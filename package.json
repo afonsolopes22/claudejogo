@@ -3,14 +3,15 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "build": "mkdir -p www && cp index.html manifest.json sw.js privacy.html www/ && rm -rf www/icons && cp -r icons www/icons",
+    "build": "mkdir -p www && cp index.html manifest.json sw.js privacy.html www/ && rm -rf www/icons www/css www/js && cp -r icons www/icons && cp -r css www/css && cp -r js www/js",
     "ios": "npm run build && npx cap sync ios && npx cap open ios"
   },
   "dependencies": {
     "@capacitor/core": "^6.0.0",
     "@capacitor/ios": "^6.0.0",
+    "@capacitor/haptics": "^6.0.0",
     "@capacitor-community/admob": "^6.0.0",
     "cordova-plugin-purchase": "^13.0.0"
   },
-  "devDependencies": { "@capacitor/cli": "^6.0.0" }
+  "devDependencies": { "@capacitor/cli": "^6.0.0", "playwright-core": "^1.45.0" }
 }

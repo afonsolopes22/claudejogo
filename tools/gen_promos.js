@@ -1,8 +1,8 @@
 const { chromium } = require('playwright-core');
 const fs = require('fs'), path = require('path');
 const { pngRGB, pngInfo } = require('./png.js');
-const ROOT = 'C:/Users/Utilizador 1/claudejogo';
-const URL = 'file:///C:/Users/Utilizador%201/claudejogo/index.html?debug';
+const ROOT = require("path").join(__dirname, "..");
+const URL = require("url").pathToFileURL(require("path").join(ROOT, "index.html")).href + '?debug';
 
 const prep = () => {   // estado "bonito": sem banner, tudo desbloqueado
   const P = window.__pool, s = P.save;
@@ -36,7 +36,7 @@ const scenes = [
 ];
 
 (async () => {
-  const br = await chromium.launch({ executablePath: 'C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe', headless: true });
+  const br = await chromium.launch({ executablePath: process.env.EDGE || 'C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe', headless: true });
   const work = await (await br.newContext()).newPage(); await work.goto('about:blank');
   const toRGB = async buf => { const b64 = buf.toString('base64'); const r = await work.evaluate(async b64 => { const img = new Image(); img.src = 'data:image/png;base64,' + b64; await img.decode(); const c = document.createElement('canvas'); c.width = img.naturalWidth; c.height = img.naturalHeight; const g = c.getContext('2d'); g.fillStyle = '#000'; g.fillRect(0, 0, c.width, c.height); g.drawImage(img, 0, 0); const d = g.getImageData(0, 0, c.width, c.height).data, rgb = new Uint8Array(c.width * c.height * 3); for (let i = 0, j = 0; i < d.length; i += 4, j += 3) { rgb[j] = d[i]; rgb[j + 1] = d[i + 1]; rgb[j + 2] = d[i + 2]; } let bin = ''; for (let i = 0; i < rgb.length; i += 32768) bin += String.fromCharCode.apply(null, rgb.subarray(i, i + 32768)); return { w: c.width, h: c.height, b64: btoa(bin) }; }, b64); return pngRGB(r.w, r.h, Buffer.from(r.b64, 'base64')); };
   fs.mkdirSync(path.join(ROOT, 'store-assets'), { recursive: true });

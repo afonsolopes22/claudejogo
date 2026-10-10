@@ -55,10 +55,11 @@ Números ajustáveis: `MISSIONS`, `DAILY`, `CHEST`, `levelBonus()`, `lvlNeed()`,
 ---
 
 ## 2. Ficheiros do projeto
-- `index.html` — o jogo (um só ficheiro). `manifest.json` + `sw.js` + `icons/` — PWA (instalável e offline na web).
+- `index.html` + `css/game.css` + `js/*.js` — o jogo (scripts clássicos, sem bundler: `i18n`, `core`, `game`, `physics`, `ai`, `ui`, `render`, `modes`, `main`). `manifest.json` + `sw.js` + `icons/` — PWA (instalável e offline na web).
 - `store-assets/icon-1024.png` — ícone da App Store (1024×1024, RGB, **sem canal alfa**).
-- `store-assets/screenshot-1..5.png` — 5 imagens promocionais 1290×2796 (iPhone 6,7"): capturas do jogo real, com legenda, em PNG RGB sem alfa. Revê-as antes de submeter: a Apple exige que a legenda corresponda ao que o ecrã mostra.
-- `package.json` / `capacitor.config.json` — Capacitor. `npm run build` copia `index.html`, `manifest.json`, `sw.js` e `icons/` para `www/` (usa `mkdir`/`cp`, por isso corre num Mac/Linux, não no `cmd` do Windows).
+- `store-assets/screenshot-1..5.png` — 5 capturas do jogo real em paisagem, 2796×1290, PNG RGB sem alfa. Revê-as antes de submeter: a Apple exige que mostrem o que a app faz.
+- `tools/` — geradores (ícones, imagens da loja, mesas semanais), solver dos desafios e testes das fases; `tests/physics.html` — 33 testes de física.
+- `package.json` / `capacitor.config.json` — Capacitor. `npm run build` copia `index.html`, `manifest.json`, `sw.js`, `privacy.html`, `css/`, `js/` e `icons/` para `www/` (usa `mkdir`/`cp`, por isso corre num Mac/Linux, não no `cmd` do Windows).
 
 ---
 
@@ -66,7 +67,7 @@ Números ajustáveis: `MISSIONS`, `DAILY`, `CHEST`, `levelBonus()`, `lvlNeed()`,
 1. **Mac com Xcode** + conta **Apple Developer** (99 $/ano).
 2. `npm install`, muda o `appId` em `capacitor.config.json` (já `com.afonsolopes.cuelegends`), `npx cap add ios`.
 3. **AdMob** (admob.google.com): cria a app e 3 blocos (banner, intersticial, recompensa).
-   Troca os IDs de **TESTE** em `Monet.ids` (`index.html`) pelos teus e acrescenta o `GADApplicationIdentifier` (ID da app AdMob) ao `Info.plist`.
+   Troca os IDs de **TESTE** em `Monet.ids` (`js/core.js`) pelos teus e acrescenta o `GADApplicationIdentifier` (ID da app AdMob) ao `Info.plist`.
    Nunca cliques nos teus próprios anúncios reais: dá ban.
 4. **App Store Connect**: cria os 5 produtos da tabela acima (IDs exatamente iguais) e preenche contrato de apps pagas + dados bancários e fiscais.
 5. Ícone: arrasta `store-assets/icon-1024.png` para o AppIcon do Xcode. Orientação: só horizontal — `UISupportedInterfaceOrientations` com `UIInterfaceOrientationLandscapeLeft` e `UIInterfaceOrientationLandscapeRight`.
@@ -74,31 +75,34 @@ Números ajustáveis: `MISSIONS`, `DAILY`, `CHEST`, `levelBonus()`, `lvlNeed()`,
 
 ## 4. Checklist final de publicação
 **Código e build**
-- [ ] IDs de anúncios de teste trocados pelos reais (`Monet.ids`) — e só no build de produção.
+- [ ] IDs de anúncios de teste trocados pelos reais (`Monet.ids`) **e `ADS_TEST = false`** (`js/core.js`) — e só no build de produção.
 - [ ] Os 5 produtos criados na App Store Connect (`coins_1000`, `coins_6000`, `coins_15000`, `remove_ads`, `starter_pack`) e aprovados/“Ready to Submit”.
 - [ ] `appId` real e *bundle id* coerente com o Xcode.
-- [ ] Hooks de teste desligados: `window.__pool` só existe com `?debug` no URL ou `localStorage.pool8_debug`. Confirma que o build nativo não os ativa (idealmente remove o bloco `window.__pool = {...}`).
-- [ ] `sw.js`: o service worker não é registado no app nativo (só em `http(s)` na web). Muda `CACHE` (`cuelegends-v5`) quando publicares uma nova versão web.
+- [ ] Hooks de teste desligados: `window.__pool` (em `js/main.js`) só existe com `?debug` no URL ou `localStorage.pool8_debug`. Confirma que o build nativo não os ativa (idealmente remove o bloco `window.__pool = {...}`).
+- [ ] `@capacitor/haptics` instalado (`npm install`) e `npx cap sync ios` feito: sem isto o iPhone não vibra (o `navigator.vibrate` não existe no iOS).
+- [ ] `sw.js`: o service worker não é registado no app nativo (só em `http(s)` na web). Muda `CACHE` (`cuelegends-v7`) e mantém `ASSETS` atualizado quando publicares uma nova versão web.
 
 **Privacidade e legal (exigido pela Apple)**
 - [ ] Política de privacidade com URL público.
 - [ ] Declaração de privacidade na App Store Connect (os anúncios recolhem identificadores/dados de uso).
-- [ ] Pedido ATT: `NSUserTrackingUsageDescription` no `Info.plist` + chamada de autorização antes de personalizar anúncios.
-- [ ] Consentimento (UMP/GDPR) para utilizadores no EEE/Reino Unido, se usares anúncios personalizados.
+- [ ] Pedido ATT: `NSUserTrackingUsageDescription` no `Info.plist` + chamada de autorização antes de personalizar anúncios. **Não implementado no código ainda.**
+- [ ] Consentimento (UMP/GDPR) para utilizadores no EEE/Reino Unido, se usares anúncios personalizados. **Não implementado no código ainda.**
 - [ ] `SKAdNetworkItems` no `Info.plist` (lista do AdMob).
 - [ ] Classificação etária: responde com atenção às perguntas sobre jogos de azar simulados — o jogo tem inscrições e recompensas em moedas **virtuais**; confirma nas diretrizes da Apple (5.3) como se aplica.
 - [ ] Botão "Restaurar compras" visível (já existe, na loja → Moedas).
 
 **Loja**
 - [ ] Ícone 1024×1024 sem transparência (`store-assets/icon-1024.png`).
-- [ ] Capturas de ecrã: 5 de 1290×2796 já prontas. Se a app correr em iPad, faltam as de 12,9" (2048×2732) — ou limita a app a iPhone.
+- [ ] Capturas de ecrã: 5 em paisagem 2796×1290 já prontas. Se a app correr em iPad, faltam as de 12,9" (2732×2048) — ou limita a app a iPhone.
 - [ ] Nome, subtítulo, descrição, palavras-chave, categoria (Jogos › Desporto/Cartas e Tabuleiro) e notas para a revisão.
 - [ ] Testa num iPhone real: toque, áudio (sintetizado), vibração, orientação, notch/safe-area, 60 fps.
 
 ## 5. Ainda não foi testado
 - Anúncios e compras **nativos** em dispositivo real (AdMob, `cordova-plugin-purchase`, `owned()` no restaurar).
-- Áudio e vibração (os testes automáticos não têm som nem motor háptico).
-- Desempenho em telemóvel real (medido só em emulação: ≈ 1,3–1,6 ms de JS por frame; o loop pára quando nada se mexe).
+- Áudio e vibração (os testes automáticos não têm som nem motor háptico; a ligação ao Capacitor Haptics foi verificada só com um simulador do plugin).
+- Partilha do GIF do replay num iPhone real (WKWebView).
+- Desempenho em telemóvel real (medido só no Edge sem ecrã: ≈ 1,5–2,0 ms de JS por frame na máquina de desenvolvimento; o loop pára quando nada se mexe).
+- ATT e consentimento GDPR (UMP): por implementar.
 
 ## Expectativas
 Mais anúncios não é mais dinheiro: demasiados intersticiais baixam as notas e a retenção, e a Apple rejeita apps agressivas.

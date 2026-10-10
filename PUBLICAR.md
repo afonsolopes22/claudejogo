@@ -4,14 +4,16 @@ Ordem recomendada. Marca cada caixa quando estiver feito.
 
 ---
 
+> ⚠️ **Não publiques a política de privacidade nem submetas a app antes de implementares o consentimento GDPR (UMP) e o pedido ATT.** `privacy.html` descreve esse comportamento, que o código ainda **não** tem (ver ponto 4). Preenche também os campos `[…]` do `privacy.html` (nome do programador, data, email, e na versão inglesa o nome do jogo).
+
 ## 0. Guardar o trabalho (agora, no teu PC)
-- [ ] `git push -u origin mega-jogo`
+- [ ] `git push origin mega-jogo`
 - [ ] `git checkout main` → `git merge mega-jogo` → `git push origin main` → `git checkout mega-jogo`
-- [ ] Confirmar que `afonsolopes22.github.io/claudejogo/` mostra a versão nova
+- [ ] Confirmar que `afonsolopes22.github.io/claudejogo/` mostra a versão nova (o jogo agora tem `index.html` + `css/` + `js/`; o GitHub Pages serve tudo)
 
 ## 1. Nome do jogo (feito: Cue Legends)
 "8 Ball Pool" é marca registada da Miniclip, por isso o jogo chama-se **Cue Legends**.
-- [x] Nome trocado em `index.html`, `manifest.json`, `capacitor.config.json` (`appName`), `package.json` e `privacy.html`
+- [x] Nome trocado em `index.html`, `js/i18n.js`, `manifest.json`, `capacitor.config.json` (`appName`), `package.json` e `privacy.html`
 - [x] `appId` = `com.afonsolopes.cuelegends` (depois de publicado não se pode mudar)
 - [ ] Pesquisar "Cue Legends" na App Store para confirmar que o nome está livre
 - [ ] Em `privacy.html` preencher `[NOME DO PROGRAMADOR]` e `[DATA]`
@@ -32,16 +34,12 @@ Isso sobe a idade mínima e afasta jogadores.
 - [ ] O tutorial, uma partida, um desafio, a loja e a pausa funcionam
 - [ ] "Adicionar ao ecrã principal" funciona e o jogo abre sem internet
 
-## 4. Correções de código (colar no Claude Code)
-```
-Correções antes de publicar:
-1. Remove o bloco window.__pool / modo debug do build de produção.
-2. Corrige a imagem promocional da loja (lista cortada a meio de um cartão)
-   e a legenda "Mesa Neon" para não prometer o que não mostra.
-3. Ícone 1024 sem moldura quadrada fina (o iOS arredonda os cantos).
-4. Guarda em tools/ os scripts que geram ícones e capturas.
-Commit e pára.
-```
+## 4. Estado do código
+- [x] Ícone 1024 sem moldura quadrada; imagens da loja em paisagem 2796×1290 (capturas reais do jogo, sem legendas que prometam o que não se vê)
+- [x] Scripts em `tools/` (ícones, imagens da loja, mesas semanais, solver, testes) e `tests/physics.html` (33 testes de física)
+- [ ] **Remover o bloco de depuração do build nativo**: em `js/main.js`, o objeto `window.__pool = {...}` só existe com `?debug` ou `localStorage.pool8_debug`. No build para a loja apaga esse bloco (ou garante que nunca há `?debug`).
+- [ ] **Consentimento GDPR (UMP) e pedido ATT ainda NÃO estão implementados no código.** São obrigatórios antes de mostrar anúncios reais (ver ponto 7). Sem isto a Apple pode rejeitar a app.
+- [ ] Antes de cada publicação web, muda `CACHE` em `sw.js` (agora `cuelegends-v7`) e, se criares ficheiros novos, acrescenta-os a `ASSETS`.
 
 ## 5. Contas (só tu podes criar)
 - [ ] **Apple Developer Program**: developer.apple.com/programs, 99 $/ano. Como particular basta o Apple ID com verificação em 2 passos.
@@ -56,10 +54,11 @@ Precisas de um Mac (pode ser emprestado ou alugado na nuvem, ex. MacinCloud).
   ```
   git clone https://github.com/afonsolopes22/claudejogo
   cd claudejogo
-  npm install
+  npm install          # inclui @capacitor/haptics (vibração nativa no iPhone)
   npx cap add ios
-  npm run ios
+  npm run ios          # copia index.html, css/, js/, icons/ para www/ e abre o Xcode
   ```
+  (`npm run build` usa `mkdir`/`cp`: corre num Mac/Linux.)
 - [ ] No Xcode: em Signing & Capabilities, escolher a tua equipa (conta Apple Developer)
 - [ ] Adicionar a capability **In-App Purchase**
 - [ ] Em Deployment Info: só **iPhone** e só **Landscape** (no Xcode marcar apenas **Landscape Left** e **Landscape Right**; desmarcar Portrait e Upside Down)
@@ -70,7 +69,7 @@ Precisas de um Mac (pode ser emprestado ou alugado na nuvem, ex. MacinCloud).
 
 ## 7. AdMob a sério
 - [ ] Criar a app iOS no AdMob e 3 blocos de anúncios: Banner, Intersticial e Recompensa
-- [ ] Trocar os IDs de **teste** em `Monet.ids` (`index.html`) pelos reais, **só no build que vai para a loja**
+- [ ] Trocar os IDs de **teste** em `Monet.ids` (`js/core.js`) pelos reais **e** pôr `ADS_TEST = false` (mesmo ficheiro), **só no build que vai para a loja**
 - [ ] **Consentimento GDPR (obrigatório em Portugal e na UE)**: no AdMob, Privacidade e mensagens, criar uma mensagem GDPR. A app tem de a mostrar antes dos anúncios (o plugin AdMob do Capacitor suporta-o com `requestConsentInfo` / `showConsentForm`).
 - [ ] Mensagem ATT da Apple (pedido de rastreio) antes de carregar anúncios (`AdMob.trackingAuthorizationStatus` / `requestTrackingAuthorization`)
 - [ ] **Nunca clicar nos teus anúncios reais.** Para testar, usa IDs de teste ou regista o teu iPhone como dispositivo de teste.
@@ -81,7 +80,7 @@ Precisas de um Mac (pode ser emprestado ou alugado na nuvem, ex. MacinCloud).
 | `coins_1000` | Consumível | 0,99 € |
 | `coins_6000` | Consumível | 4,99 € |
 | `coins_15000` | Consumível | 9,99 € |
-| `starter_pack` | Consumível (oferta única no jogo) | 0,99 € |
+| `starter_pack` | **Não consumível** (oferta única no jogo) | 0,99 € |
 | `remove_ads` | Não consumível | 2,99 € |
 
 Confirma os IDs exatos no `MONETIZACAO.md` atualizado. Os do jogo e os da loja têm de ser iguais.
@@ -92,7 +91,7 @@ Confirma os IDs exatos no `MONETIZACAO.md` atualizado. Os do jogo e os da loja t
 Ver `LOJA-TEXTOS.md` para os textos prontos.
 - [ ] Nome, subtítulo, descrição, palavras-chave
 - [ ] Categoria: **Jogos → Desporto** (secundária: Casual)
-- [ ] Capturas de ecrã 6,7" (já existem em `store-assets/`, mas refazer se mudares o nome)
+- [ ] Capturas de ecrã em **paisagem** 2796×1290 (6,9"/6,7"): já existem em `store-assets/screenshot-1..5.png`; refaz com `node tools/gen_promos.js` se mudares o visual
 - [ ] Ícone 1024x1024 (já existe)
 - [ ] **URL da política de privacidade**: `https://afonsolopes22.github.io/claudejogo/privacy.html` (preencher primeiro os campos entre [ ] no ficheiro)
 - [ ] **URL de suporte**: pode ser a mesma página, ou um email de contacto
@@ -119,6 +118,13 @@ Ver `LOJA-TEXTOS.md` para os textos prontos.
 - Política de privacidade em falta ou incompleta
 - Anúncios antes do pedido ATT
 - App que parece só um site embrulhado: o jogo funciona offline, e isso ajuda
+
+### Verificar num iPhone real (nada disto foi testado em dispositivo)
+- [ ] Vibração (Capacitor Haptics): tacada, caçapa, falta, vitória; e o interruptor em Definições
+- [ ] Partilhar GIF do replay (Web Share de ficheiros no WKWebView). Se não abrir a folha de partilha, usa o plugin **@capacitor/share** + **@capacitor/filesystem**
+- [ ] Bloqueio em paisagem, entalhe/safe-area nos dois lados, modo canhoto
+- [ ] Idioma: segue o do telemóvel (PT/EN) e muda em Definições
+- [ ] Desempenho (60 fps) com a mesa Neon/Lendária e "Reduzir efeitos" ligado e desligado
 
 ## 11. Depois de publicar
 - [ ] **Analytics** (Firebase): saber onde os jogadores desistem

@@ -65,7 +65,7 @@ const solveRobust = (idx, req, tmax) => {
 module.exports = { solveRobust };
 
 if (require.main === module) (async () => {
-  const br = await chromium.launch({ executablePath: 'C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe', headless: true });
+  const br = await chromium.launch({ executablePath: process.env.EDGE || 'C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe', headless: true });
   const page = await (await br.newContext({ viewport: { width: 844, height: 390 } })).newPage();
   await page.goto(require("url").pathToFileURL(require("path").join(__dirname, "..", "index.html")).href + '?debug'); await page.waitForTimeout(500);
   await page.evaluate(() => { const s = window.__pool.save; s.tutDone = true; s.firstDone = true; });

@@ -30,7 +30,7 @@ const gifDecode = (u8) => {      // descodificador GIF mínimo e independente: d
 };
 const results = []; const ok = (name, cond, d) => { results.push([name, !!cond, d]); console.log((cond ? 'PASS ' : 'FAIL ') + name + (d ? '  -> ' + d : '')); };
 (async () => {
-  const br = await chromium.launch({ executablePath: 'C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe', headless: true });
+  const br = await chromium.launch({ executablePath: process.env.EDGE || 'C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe', headless: true });
   const page = await (await br.newContext({ viewport: { width: 844, height: 390 }, hasTouch: true, isMobile: true })).newPage(); const errs = [];
   page.on('pageerror', e => errs.push(String(e))); page.on('console', m => { if (m.type() === 'error') errs.push(m.text()); });
   await page.goto(url); await page.waitForTimeout(2500);

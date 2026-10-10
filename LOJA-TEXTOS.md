@@ -31,8 +31,12 @@ mesmo sem internet.
 • 4 salas contra o computador, do Bairro ao Mestre
 • 30 desafios com estrelas: resolve tacadas impossíveis
 • Torneios em 3 rondas
+• Evento da semana: uma mesa nova todas as semanas
+• Treino livre com assistente que sugere a melhor tacada e mapa de calor
+• Replay de cada tacada e GIF para partilhar
 • Missões diárias, conquistas e estatísticas
-• Joga contra um amigo no mesmo telemóvel
+• 2 jogadores no mesmo telemóvel: nomes, séries à melhor de 3 ou 5 e placar
+• Modo canhoto, vibração e opção para reduzir efeitos
 
 ✨ PERSONALIZA
 • Tacos e panos de mesa de comum a lendário
@@ -49,9 +53,8 @@ bilhar,snooker,pool,taco,bola 8,mesa,desporto,offline,desafios,torneio,8 bolas,c
 
 **Notas para a equipa de revisão** (App Review Information):
 ```
-No login required. All features are available offline.
+No login required. Core gameplay works offline (rewarded ads and purchases need a connection).
 In-app purchases: Shop → Coins tab. "Restore purchases" is in the same tab.
-Ads are shown only after the ATT and consent prompts.
 ```
 
 ---
@@ -81,8 +84,12 @@ touch controls and quick matches you can play anywhere, even offline.
 • 4 rooms against the computer, from Street to Master
 • 30 challenges with stars: solve impossible shots
 • 3-round tournaments
+• Weekly event: a new table every week
+• Free practice with an assistant that suggests the best shot, plus a heat map
+• Replay every shot and share it as a GIF
 • Daily missions, achievements and stats
-• Play a friend on the same phone
+• 2 players on one phone: names, best-of-3/5 series and a scoreboard
+• Left-handed mode, vibration and a "reduce effects" option
 
 ✨ MAKE IT YOURS
 • Cues and table cloths from common to legendary
