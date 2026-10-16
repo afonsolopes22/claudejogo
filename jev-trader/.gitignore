@@ -1,0 +1,7 @@
+__pycache__/
+*.pyc
+.pytest_cache/
+data/*.jsonl
+data/KILL
+data/HALTED
+.env

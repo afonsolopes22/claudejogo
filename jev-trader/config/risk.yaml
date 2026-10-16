@@ -1,0 +1,9 @@
+# Hard limits. Owned by code. Jev never sees these as anything but read-only hints; it cannot change them.
+version: risk-v1
+max_drawdown_pct: 15.0        # peak-to-trough on equity; breaching sets the HALTED latch (reduce-only)
+max_daily_loss_pct: 3.0       # intraday; breaching sets the HALTED latch
+max_position_notional_pct: 20.0
+max_gross_exposure_pct: 60.0
+min_order_notional_usd: 10.0
+kill_switch_path: data/KILL   # `touch data/KILL` (or scripts/killswitch.py arm) blocks every automated order
+halt_latch_path: data/HALTED  # written by the risk engine; operator removes it after review

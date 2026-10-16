@@ -1,0 +1,107 @@
+# Finalist setups compiled from docs/03-research.md (as of 2026-10-16). Every number here is CODE-OWNED.
+# bias = the thesis direction; Jev may disagree, in which case the policy does nothing.
+# stop/target in bps define the Kelly payoff ratio b = target/stop. horizon_bars = time stop (1h candles).
+# Facts marked VERIFIED cite sources in docs/03-research.md; ESTIMATE/SPECULATION are labelled there.
+version: v1.0
+as_of: 2026-10-16
+setups:
+  - symbol: BTC
+    venue: paper
+    bias: neutral
+    tradable: false
+    thesis: "Regime anchor only. BTC ~82k, below the Oct-2025 ATH, dominance ~58-60%, ETF outflows after the hot Sept CPI print. Not a setup; its snapshot is in the state so Jev can read the macro tape."
+    bear_case: "n/a (not traded)"
+    invalidation: ["n/a"]
+    stop_bps: 150
+    target_bps: 300
+    horizon_bars: 24
+    max_notional_pct: 1
+  - symbol: HYPE
+    venue: paper
+    bias: long
+    thesis: "Hyperliquid: >$1.4B cumulative protocol revenue, ~$1.26B spent on open-market HYPE buybacks (~95% of fees); from Oct-2026 ~90% of USDC-reserve earnings also fund buybacks. Organic, fee-driven value accrual, not emissions. Buy pullbacks when the tape confirms, in trending or mean-reverting regimes."
+    confirmed_catalysts: ["USDC reserve earnings routed to buybacks (first ~14.58M USDC payment, Oct 2026)", "Monthly core-contributor unlock on the 6th (known, scheduled)"]
+    speculative_catalysts: ["HIP-3 market growth", "Builder-code volume growth"]
+    bear_case: "Valuation is rich (CoinShares-cited Jul-2026: ~167x FDV/annualized revenue, ~39x mcap/revenue). Buybacks are pro-cyclical: volume falls when price falls. ~9.9M HYPE/month team unlocks (~$800M at $80) are a steady supply source. Open interest reportedly declining. Perp-DEX competition and a single-chain concentration risk."
+    invalidation: ["Weekly protocol revenue falls >40% from trailing average", "Buyback program paused or redirected", "Price loses the post-unlock range low on rising volume", "OI collapse with negative funding persisting >3 days"]
+    stop_bps: 350
+    target_bps: 800
+    horizon_bars: 72
+    max_notional_pct: 15
+    notes: "Avoid new entries in the 24h around the 6th-of-month unlock (policy note; enforce via active windows if needed)."
+  - symbol: MON
+    venue: paper
+    bias: short
+    thesis: "Monad: ~10.7B team tokens (~90% of the ~11.8B circulating) unlock 24-Nov-2026 (total event cited at 16.6-16.8B). Supply overhang vs a ~$0.023 price and ~$270M market cap. Short strength into the unlock; cover before or on the event."
+    confirmed_catalysts: ["24-Nov-2026 team/investor cliff unlock (Tokenomist, Tokenomics.com, CoinMarketCal)"]
+    speculative_catalysts: ["StraitsX stablecoin and privacy announcements may produce squeezes"]
+    bear_case: "Widely known unlock is likely partly priced in; perps already showed negative funding (-0.0248%) on a +22% squeeze day, so crowded shorts get squeezed. Team may lock, stake, or OTC rather than sell. Thin perp liquidity (OI tens-to-low-hundreds of $M aggregate) raises slippage and squeeze risk."
+    invalidation: ["Official announcement that team tokens are re-locked or staked", "Funding persistently negative with OI rising (crowded short)", "Price breaks above the Oct range high on rising spot volume"]
+    stop_bps: 600
+    target_bps: 1200
+    horizon_bars: 72
+    max_notional_pct: 8
+    active_from: 2026-10-16
+    active_to: 2026-11-24
+  - symbol: SOL
+    venue: paper
+    bias: neutral
+    thesis: "Solana Alpenglow activates on mainnet 21-Oct-2026 (~150ms finality, vote txs off-chain). Event-driven: both buy-the-rumour and sell-the-news are plausible; ETF outflows for 8 sessions into the event. Let Jev read the tape; trade only with strong confirmation."
+    confirmed_catalysts: ["Alpenglow mainnet activation 21-Oct-2026 (epoch 1064)"]
+    speculative_catalysts: ["ETF flow reversal", "Headline TPS drop on activation day misread as weakness"]
+    bear_case: "Ethereum fell after two of its last three upgrades; the date is public and priced. ETF flows are negative. Headline transaction counts will drop at activation, inviting negative narratives."
+    invalidation: ["Upgrade delayed or halted", "Spot ETF outflows accelerate >$50M/day for 3 days"]
+    stop_bps: 300
+    target_bps: 600
+    horizon_bars: 48
+    max_notional_pct: 10
+    active_from: 2026-10-16
+    active_to: 2026-10-31
+  - symbol: ETH
+    venue: paper
+    bias: short
+    thesis: "ETH structural underperformance: ~$715M spot-ETF outflows 1-13 Oct, ETH/BTC ~0.0296 near multi-year lows, issuance ~1.1M ETH/yr with burn covering only a small share as activity sits on L2s. Short rallies in risk-off, BTC-led regimes only."
+    confirmed_catalysts: ["Glamsterdam Sepolia testnet 6-Oct-2026 (no mainnet date confirmed)"]
+    speculative_catalysts: ["Staking-ETF demand", "Fed hold on 28-Oct reversing risk-off"]
+    bear_case: "Most crowded macro short in crypto; a Fed hold or dovish surprise on 28-Oct would squeeze it hard. Staked share ~36% reduces float. ETH/BTC at cycle lows is where mean reversion historically starts."
+    invalidation: ["Spot ETH ETF net inflows >$200M/week", "ETH/BTC reclaims 0.032 and holds a week", "BTC dominance turns down >2pts in a week"]
+    stop_bps: 250
+    target_bps: 500
+    horizon_bars: 48
+    max_notional_pct: 12
+  - symbol: UNI
+    venue: paper
+    bias: long
+    thesis: "Uniswap fee switch is live (UNIfication, Dec-2025): protocol fees on v2 and selected v3 pools fund UNI buy-and-burn; a 100M UNI retroactive burn (~$596M) executed. ~$124M fees / ~$9.8M protocol revenue in the last 30d. Real revenue now accrues to the token at a ~$4.5B market cap."
+    confirmed_catalysts: ["Fee switch live and burning (DefiLlama, governance record)"]
+    speculative_catalysts: ["Fee switch extended to more v3/v4 pools", "Robinhood Chain volume growth"]
+    bear_case: "UNI fell to a cycle low in Aug-2026 AFTER burns began: burns do not create demand. ~$117M annualized protocol revenue vs $4.5B cap is ~38x; DEX fee compression from aggregators and perp-DEX rotation. Sources conflict on activation dates and burn run-rate."
+    invalidation: ["30d protocol revenue falls below $5M", "Governance pauses or reduces the fee share", "Price breaks the Aug-2026 cycle low"]
+    stop_bps: 400
+    target_bps: 800
+    horizon_bars: 72
+    max_notional_pct: 8
+  - symbol: ENA
+    venue: paper
+    bias: short
+    thesis: "Ethena: USDe supply contracted >65% from a ~$15B peak to ~$4.9B; sUSDe yield ~5% as funding sits neutral; token incentives ended 1-Oct; the final investor tranche (1.41B ENA, ~14%) unlocked 5-Oct and ~3B ENA sits with one holder (StablecoinX). Buyback needs USDe >= $7.5B, far from current. Fees ~$1.1M/day against a ~$2.8B cap."
+    confirmed_catalysts: ["Investor unlock completed 5-Oct-2026", "Incentives ended 1-Oct-2026", "Buyback milestone ($7.5B USDe) not met"]
+    speculative_catalysts: ["Standard Chartered $2 target (2028) framing", "Funding rates turning strongly positive"]
+    bear_case: "A funding-rate spike (risk-on) rebuilds the basis-trade yield fast and USDe supply can regrow in weeks; ENA has squeezed +20x from Sept lows per one report (unverified). StablecoinX disposals need foundation approval, so the overhang may not hit the market."
+    invalidation: ["USDe supply grows >15% in two weeks", "BTC/ETH perp funding >+0.03%/8h sustained for a week", "Buyback milestone reached or lowered by governance"]
+    stop_bps: 600
+    target_bps: 1200
+    horizon_bars: 72
+    max_notional_pct: 6
+  - symbol: AAVE
+    venue: paper
+    bias: long
+    thesis: "Aave: ~$18.2B TVL, ~$38.5M fees / ~$5.0M protocol revenue in 30d; Aavenomics 3.0 automated buybacks live (Jun-2026) and a token burn under consideration (Sep-2026). Largest lending venue with recurring revenue at a ~$2.4-2.6B cap."
+    confirmed_catalysts: ["Aavenomics 3.0 buyback engine live", "Buyback budget cut to $30M/yr (Mar-2026) - a negative, but confirmed"]
+    speculative_catalysts: ["Burn proposal passing", "Tokenized-stock markets on Base growing"]
+    bear_case: "Protocol revenue (~$60M/yr annualized) is thin vs TVL; buyback budget was CUT not raised; a bad-debt event in a volatile tape hits AAVE as the backstop asset (Umbrella). Price already rallied ~60% from June on buyback headlines."
+    invalidation: ["Bad-debt event >$20M", "Buyback paused by governance", "30d protocol revenue < $3M"]
+    stop_bps: 400
+    target_bps: 800
+    horizon_bars: 72
+    max_notional_pct: 8
