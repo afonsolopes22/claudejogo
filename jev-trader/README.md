@@ -16,4 +16,6 @@ Docs: `docs/00-spec.md` → `01-architecture.md` → `02-plan.md` → `03-resear
 
 Quick start: `pip install -e ".[dev]" && pytest && python scripts/run_paper.py --bars 300`.
 
+**Painel web (interface de controlo).** `python -m jev_trader.ui.server` e abre http://127.0.0.1:8787. Arranca/pára o loop em papel (juiz Demo, Stub ou Jev real), mostra equity, drawdown, veredictos por setup, fills e escalações ao vivo, arma o kill switch, corre e aprova a revisão noturna, edita `config/*.yaml` com validação, e lê a research e o journal. O servidor é stdlib puro (sem dependências extra). O juiz "Demo" inventa veredictos a partir do momentum do tape para mostrar a canalização; não tem skill e não é evidência de nada.
+
 **Honesty notes.** The build environment could not reach exchange APIs or `docs.typesafe.ai`, so the Jev client is built against the inspected `typesafe-sdk 0.7.5` wire models and is unit-tested with a real `SystemOneResponse`, but it has not been run against the live endpoint. No live order path ships enabled. The prompt that produced this repo referenced an "AgenKit" harness at agenkit.xyz; that domain did not resolve and has no public footprint, so the six-phase gated discipline it described is implemented here directly as `docs/0*.md` plus tests, with nothing installed from third parties beyond the two official SDKs.

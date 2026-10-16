@@ -1,0 +1,344 @@
+<!doctype html>
+<html lang="pt">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>jev-trader · painel</title>
+<style>
+:root{
+  --page:#f9f9f7;--surface:#fcfcfb;--surface2:#f1f1ee;--ink:#0b0b0b;--ink2:#52514e;--muted:#898781;--grid:#e1e0d9;--axis:#c3c2b7;
+  --s1:#2a78d6;--good:#0ca30c;--warn:#fab219;--serious:#ec835a;--crit:#d03b3b;--good-text:#006300;--border:#e1e0d9;
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --page:#0d0d0d;--surface:#1a1a19;--surface2:#232322;--ink:#f0efec;--ink2:#c3c2b7;--muted:#898781;--grid:#2c2c2a;--axis:#383835;--s1:#3987e5;--good-text:#0ca30c;--border:#2c2c2a;
+}}
+:root[data-theme="dark"]{--page:#0d0d0d;--surface:#1a1a19;--surface2:#232322;--ink:#f0efec;--ink2:#c3c2b7;--muted:#898781;--grid:#2c2c2a;--axis:#383835;--s1:#3987e5;--good-text:#0ca30c;--border:#2c2c2a;}
+*{box-sizing:border-box}
+body{margin:0;background:var(--page);color:var(--ink);font:14px/1.45 system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
+header{display:flex;flex-wrap:wrap;gap:10px;align-items:center;padding:12px 16px;border-bottom:1px solid var(--border);background:var(--surface);position:sticky;top:0;z-index:5}
+header h1{font-size:16px;margin:0 12px 0 0;font-weight:600}
+.chip{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:999px;background:var(--surface2);color:var(--ink2);font-size:12px;font-variant-numeric:tabular-nums}
+.chip b{color:var(--ink);font-weight:600}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--muted)}
+.dot.on{background:var(--good)} .dot.warn{background:var(--warn)} .dot.crit{background:var(--crit)}
+nav{display:flex;gap:4px;padding:8px 16px;border-bottom:1px solid var(--border);background:var(--surface)}
+nav button{background:none;border:1px solid transparent;color:var(--ink2);padding:6px 12px;border-radius:8px;cursor:pointer}
+nav button.active{background:var(--surface2);color:var(--ink);border-color:var(--border)}
+main{padding:16px;max-width:1500px;margin:0 auto}
+.tab{display:none}.tab.active{display:block}
+.grid{display:grid;gap:16px;grid-template-columns:320px 1fr}
+@media (max-width:1000px){.grid{grid-template-columns:1fr}}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px}
+.card h2{font-size:13px;margin:0 0 10px;color:var(--ink2);font-weight:600;text-transform:uppercase;letter-spacing:.04em}
+label{display:block;font-size:12px;color:var(--ink2);margin:8px 0 4px}
+input,select,textarea{width:100%;padding:7px 9px;border:1px solid var(--border);border-radius:8px;background:var(--surface2);color:var(--ink);font:inherit}
+textarea{font:12px/1.4 ui-monospace,SFMono-Regular,Menlo,monospace;min-height:380px}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+button.btn{padding:8px 14px;border-radius:8px;border:1px solid var(--border);background:var(--surface2);color:var(--ink);cursor:pointer;font:inherit}
+button.btn.primary{background:var(--s1);border-color:var(--s1);color:#fff}
+button.btn.danger{background:var(--crit);border-color:var(--crit);color:#fff}
+button.btn:disabled{opacity:.5;cursor:not-allowed}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:16px}
+.kpi{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:12px}
+.kpi .l{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
+.kpi .v{font-size:22px;font-weight:600;font-variant-numeric:tabular-nums;margin-top:2px}
+.kpi .d{font-size:12px;color:var(--ink2)}
+.up{color:var(--good-text)} .down{color:var(--crit)}
+table{width:100%;border-collapse:collapse;font-size:13px;font-variant-numeric:tabular-nums}
+th{text-align:left;color:var(--muted);font-weight:500;font-size:11px;text-transform:uppercase;letter-spacing:.04em;padding:6px 8px;border-bottom:1px solid var(--border)}
+td{padding:7px 8px;border-bottom:1px solid var(--grid);vertical-align:top;white-space:nowrap}
+td.small,td.wrap{white-space:normal}
+tr:last-child td{border-bottom:none}
+.tag{display:inline-block;padding:1px 7px;border-radius:6px;font-size:11px;background:var(--surface2);color:var(--ink2)}
+.tag.long{background:color-mix(in oklab,var(--good) 18%,var(--surface2));color:var(--good-text)}
+.tag.short{background:color-mix(in oklab,var(--crit) 18%,var(--surface2));color:var(--crit)}
+.tag.crisis{background:color-mix(in oklab,var(--crit) 22%,var(--surface2));color:var(--crit)}
+.tag.safe{color:var(--good-text)} .tag.near_limit{color:var(--serious)} .tag.reduce{color:var(--crit)}
+.chart{position:relative;width:100%;height:260px}
+.chart canvas{width:100%;height:100%;display:block}
+.tip{position:absolute;pointer-events:none;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:6px 9px;font-size:12px;color:var(--ink2);white-space:nowrap;display:none;box-shadow:0 2px 8px rgba(0,0,0,.15)}
+.tip b{color:var(--ink)}
+pre,.md{font:12px/1.5 ui-monospace,SFMono-Regular,Menlo,monospace;white-space:pre-wrap;word-break:break-word;background:var(--surface2);padding:12px;border-radius:8px;max-height:70vh;overflow:auto}
+.md{white-space:normal;font:14px/1.5 system-ui,sans-serif}
+.md h1,.md h2,.md h3{margin:14px 0 6px}.md table{margin:8px 0}.md code{font-family:ui-monospace,monospace;font-size:12px;background:var(--surface);padding:0 4px;border-radius:4px}
+.msg{font-size:12px;color:var(--ink2);margin-top:8px;min-height:16px}
+.msg.err{color:var(--crit)}
+.small{font-size:12px;color:var(--muted)}
+.gate{display:inline-block;width:9px;height:9px;border-radius:2px;margin-right:5px;vertical-align:middle;background:var(--muted)}
+.gate.ok{background:var(--good)}
+.step{display:flex;gap:10px;margin:8px 0}.step .n{width:24px;height:24px;border-radius:50%;background:var(--s1);color:#fff;display:flex;align-items:center;justify-content:center;font-size:12px;flex:none}
+</style>
+</head>
+<body>
+<header>
+  <h1>jev-trader</h1>
+  <span class="chip"><span id="dotRun" class="dot"></span><b id="chipRun">parado</b></span>
+  <span class="chip">juiz <b id="chipJudge">—</b></span>
+  <span class="chip">equity <b id="chipEq">—</b></span>
+  <span class="chip">DD <b id="chipDd">—</b></span>
+  <span class="chip">hoje <b id="chipDay">—</b></span>
+  <span class="chip"><span id="dotKill" class="dot"></span>kill switch <b id="chipKill">—</b></span>
+  <span class="chip"><span id="dotHalt" class="dot"></span>HALTED <b id="chipHalt">—</b></span>
+  <span class="chip">schema <b id="chipSchema">—</b></span>
+  <span style="flex:1"></span>
+  <button class="btn" id="themeBtn" title="tema">◐</button>
+</header>
+<nav>
+  <button data-tab="painel" class="active">Painel</button>
+  <button data-tab="revisao">Revisão noturna</button>
+  <button data-tab="config">Configuração</button>
+  <button data-tab="docs">Research &amp; docs</button>
+  <button data-tab="journal">Journal</button>
+  <button data-tab="ajuda">Como usar</button>
+</nav>
+<main>
+
+<!-- ===================== PAINEL ===================== -->
+<section class="tab active" id="tab-painel">
+  <div class="kpis">
+    <div class="kpi"><div class="l">Equity</div><div class="v" id="kEq">—</div><div class="d" id="kEqD">capital inicial —</div></div>
+    <div class="kpi"><div class="l">Drawdown</div><div class="v" id="kDd">—</div><div class="d" id="kDdD">limite —</div></div>
+    <div class="kpi"><div class="l">PnL de hoje</div><div class="v" id="kDay">—</div><div class="d" id="kDayD">limite —</div></div>
+    <div class="kpi"><div class="l">Velas processadas</div><div class="v" id="kTicks">0</div><div class="d" id="kTicksD">falhas do juiz: 0</div></div>
+    <div class="kpi"><div class="l">Fills</div><div class="v" id="kFills">0</div><div class="d" id="kFillsD">escalações: 0</div></div>
+    <div class="kpi"><div class="l">Exposição bruta</div><div class="v" id="kGross">—</div><div class="d" id="kGrossD">limite —</div></div>
+  </div>
+  <div class="grid">
+    <div>
+      <div class="card">
+        <h2>Controlo</h2>
+        <label>Juiz (Reflex)</label>
+        <select id="fJudge"><option value="demo">Demo: veredictos simulados do tape (sem rede, sem skill)</option><option value="stub">Stub neutro (nunca entra)</option><option value="jev">TypeSafe Jev real (TYPESAFE_API_KEY)</option></select>
+        <label><input type="checkbox" id="fBrain" style="width:auto"> Escalar para Claude Opus 5.5 (ANTHROPIC_API_KEY)</label>
+        <label>Velas (1h sintéticas)</label><input id="fBars" type="number" value="300" min="10" max="5000">
+        <label>Velocidade (ms por vela)</label><input id="fDelay" type="number" value="400" min="0" max="10000">
+        <label>Capital inicial (USD)</label><input id="fEquity" type="number" value="10000" min="100">
+        <label>Volatilidade sintética (bps/vela)</label><input id="fVol" type="number" value="40" min="1" max="500">
+        <label>Replay (ficheiro JSONL, opcional)</label><input id="fReplay" placeholder="data/books.jsonl">
+        <div class="row" style="margin-top:12px">
+          <button class="btn primary" id="btnStart">▶ Iniciar</button>
+          <button class="btn" id="btnStop">■ Parar</button>
+        </div>
+        <div class="msg" id="msgCtl"></div>
+        <div class="small" id="envNote"></div>
+      </div>
+      <div class="card" style="margin-top:16px">
+        <h2>Segurança (código, não modelo)</h2>
+        <div class="row">
+          <button class="btn danger" id="btnKillArm">⛔ Armar kill switch</button>
+          <button class="btn" id="btnKillDisarm">Desarmar</button>
+          <button class="btn" id="btnClearHalt">Limpar HALTED</button>
+        </div>
+        <div class="msg" id="msgSafe"></div>
+        <div class="small">Kill switch bloqueia <b>todas</b> as ordens, incluindo saídas. HALTED é escrito pelo motor de risco ao bater o drawdown/perda diária; só o operador o limpa.</div>
+      </div>
+      <div class="card" style="margin-top:16px">
+        <h2>Portas de entrada (código)</h2>
+        <div id="gates" class="small">—</div>
+      </div>
+    </div>
+    <div>
+      <div class="card">
+        <h2>Curva de equity</h2>
+        <div class="chart"><canvas id="cEq"></canvas><div class="tip" id="tEq"></div></div>
+      </div>
+      <div class="card" style="margin-top:16px">
+        <h2>Drawdown (%)</h2>
+        <div class="chart" style="height:140px"><canvas id="cDd"></canvas><div class="tip" id="tDd"></div></div>
+      </div>
+      <div class="card" style="margin-top:16px">
+        <h2>Setups ao vivo · último veredicto do Jev</h2>
+        <div style="overflow:auto"><table id="tblSetups"><thead><tr>
+          <th>Símbolo</th><th>Mid</th><th>Spread</th><th>Regime</th><th>Direção</th><th>Qualidade</th><th>Fluxo tóxico</th><th>Risco</th><th>Posição</th><th>uPnL</th><th>Estado</th>
+        </tr></thead><tbody></tbody></table></div>
+      </div>
+      <div class="grid" style="grid-template-columns:1fr 1fr;margin-top:16px">
+        <div class="card"><h2>Fills</h2><div style="overflow:auto;max-height:320px"><table id="tblFills"><thead><tr><th>ts</th><th>Símbolo</th><th>Lado</th><th>Qtd</th><th>Preço</th><th>Slip</th><th>Fee</th><th>Motivo</th></tr></thead><tbody></tbody></table></div></div>
+        <div class="card"><h2>Escalações ao Brain</h2><div id="escList" class="small" style="max-height:320px;overflow:auto">—</div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== REVISÃO ===================== -->
+<section class="tab" id="tab-revisao">
+  <div class="card">
+    <h2>Revisão noturna · calibração (Brier) e proposta de revisão do schema</h2>
+    <div class="row">
+      <button class="btn primary" id="btnReview">Correr revisão agora</button>
+      <button class="btn" id="btnApprove">Aprovar proposta → config/setups.yaml</button>
+    </div>
+    <div class="msg" id="msgRev"></div>
+    <div id="revProps" class="small" style="margin:8px 0"></div>
+    <div id="revReport" class="md">Ainda sem relatório. Corre o loop e depois a revisão.</div>
+  </div>
+  <div class="card" style="margin-top:16px"><h2>Relatórios anteriores</h2><div id="revHistory" class="small">—</div></div>
+</section>
+
+<!-- ===================== CONFIG ===================== -->
+<section class="tab" id="tab-config">
+  <div class="grid" style="grid-template-columns:1fr 1fr">
+    <div class="card"><h2>config/setups.yaml (finalistas e schema)</h2><textarea id="cfgSetups"></textarea><div class="row" style="margin-top:8px"><button class="btn primary" data-save="setups">Guardar</button></div><div class="msg" id="msgSetups"></div></div>
+    <div class="card"><h2>config/risk.yaml (limites rígidos)</h2><textarea id="cfgRisk" style="min-height:200px"></textarea><div class="row" style="margin-top:8px"><button class="btn primary" data-save="risk">Guardar</button></div><div class="msg" id="msgRisk"></div><div class="small">Validado pelo mesmo modelo Pydantic que o loop usa. Cópia de segurança automática. Aplica-se no próximo arranque.</div></div>
+  </div>
+</section>
+
+<!-- ===================== DOCS ===================== -->
+<section class="tab" id="tab-docs">
+  <div class="card">
+    <div class="row">
+      <select id="docSel" style="width:auto">
+        <option value="03-research.md">03 · Research e finalistas</option>
+        <option value="06-what-could-i-be-wrong-about.md">06 · What could I be wrong about?</option>
+        <option value="00-spec.md">00 · Spec</option><option value="01-architecture.md">01 · Arquitetura</option><option value="02-plan.md">02 · Plano</option>
+        <option value="04-review.md">04 · Review</option><option value="05-ship.md">05 · Ship</option><option value="README.md">README</option>
+      </select>
+    </div>
+    <div id="docView" class="md" style="margin-top:12px">—</div>
+  </div>
+</section>
+
+<!-- ===================== JOURNAL ===================== -->
+<section class="tab" id="tab-journal">
+  <div class="card"><h2>Journal (últimos 300 registos de data/journal.jsonl)</h2>
+    <div class="row"><select id="jKind" style="width:auto"><option value="">todos</option><option>fill</option><option>intent</option><option>risk</option><option>verdict</option><option>escalation</option><option>tick</option><option>judge_unavailable</option></select><button class="btn" id="btnJ">Atualizar</button></div>
+    <pre id="jView" style="margin-top:10px">—</pre></div>
+</section>
+
+<!-- ===================== AJUDA ===================== -->
+<section class="tab" id="tab-ajuda">
+  <div class="card"><h2>Como usar isto</h2>
+    <div class="step"><div class="n">1</div><div><b>Arrancar o painel.</b> No terminal: <code>cd jev-trader && pip install -e ".[dev]" && python -m jev_trader.ui.server</code> e abre <code>http://127.0.0.1:8787</code>.</div></div>
+    <div class="step"><div class="n">2</div><div><b>Testar a canalização sem rede.</b> No Painel, juiz = Demo, carrega ▶ Iniciar. O Demo inventa veredictos a partir do momentum do próprio tape (sem qualquer skill) só para veres entradas, saídas, escalações e o kill switch a funcionar. O Stub neutro nunca entra.</div></div>
+    <div class="step"><div class="n">3</div><div><b>Ligar o Reflex real.</b> Cria uma chave em console.typesafe.ai, <code>export TYPESAFE_API_KEY=...</code> antes de arrancar o servidor, escolhe juiz = Jev. Cada vela faz UMA chamada com os 8 setups em paralelo. Opcional: <code>export ANTHROPIC_API_KEY=...</code> e marca "Escalar para Claude Opus 5.5".</div></div>
+    <div class="step"><div class="n">4</div><div><b>Deixar correr em papel.</b> Tudo o que vês aqui é paper trading com um modelo de custos. Nenhuma ordem real pode sair deste repositório: o adaptador live está deliberadamente por implementar (docs/05-ship.md).</div></div>
+    <div class="step"><div class="n">5</div><div><b>Revisão noturna.</b> Separador "Revisão noturna" → Correr. Mede Brier/skill/ECE por setup, lista fills e misses e propõe um setups.yaml novo. Só substitui o atual quando carregares "Aprovar".</div></div>
+    <div class="step"><div class="n">6</div><div><b>Regra de sobrevivência.</b> Não passes de papel para dinheiro enquanto a revisão não mostrar skill &gt; 0 em pelo menos 2 setups com n ≥ 100. O sistema a não fazer nada é o estado correto até o merecer.</div></div>
+    <p class="small">As portas de entrada (qualidade ≥ 2, confiança &gt; 0.80, risco = safe), o quarter-Kelly e todos os limites estão em código (policy.py, risk.py). O Jev só responde a perguntas tipadas; o Brain só pode dizer resume / pause / reduce / flatten.</p>
+  </div>
+</section>
+</main>
+
+<script>
+const $=s=>document.querySelector(s);
+const fmtUsd=v=>v==null?'—':v.toLocaleString('pt-PT',{style:'currency',currency:'USD',maximumFractionDigits:2});
+const fmtPct=(v,d=2)=>v==null?'—':(v>0?'+':'')+v.toFixed(d)+'%';
+const fmtTs=ts=>new Date(ts).toISOString().slice(5,16).replace('T',' ');
+const esc=s=>String(s??'').replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+async function api(path,body){const r=await fetch(path,body?{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)}:undefined);const j=await r.json();if(!r.ok)throw new Error(j.error||r.statusText);return j;}
+
+// tabs
+document.querySelectorAll('nav button').forEach(b=>b.onclick=()=>{document.querySelectorAll('nav button').forEach(x=>x.classList.toggle('active',x===b));document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('active',t.id==='tab-'+b.dataset.tab));if(b.dataset.tab==='config')loadConfig();if(b.dataset.tab==='docs')loadDoc();if(b.dataset.tab==='journal')loadJournal();if(b.dataset.tab==='revisao')loadReviews();});
+$('#themeBtn').onclick=()=>{const r=document.documentElement;r.dataset.theme=r.dataset.theme==='dark'?'light':'dark';try{localStorage.setItem('theme',r.dataset.theme)}catch(e){}};
+try{const t=localStorage.getItem('theme');if(t)document.documentElement.dataset.theme=t;}catch(e){}
+
+// ---- charts (single series; hover crosshair + tooltip) ----
+function lineChart(canvas,tipEl,pts,opts){
+  const dpr=window.devicePixelRatio||1,W=canvas.clientWidth,H=canvas.clientHeight;
+  canvas.width=W*dpr;canvas.height=H*dpr;const g=canvas.getContext('2d');g.scale(dpr,dpr);
+  const css=getComputedStyle(document.documentElement);const C=n=>css.getPropertyValue(n).trim();
+  g.clearRect(0,0,W,H);
+  const pad={l:64,r:12,t:10,b:22};
+  if(!pts||pts.length<2){g.fillStyle=C('--muted');g.font='12px system-ui';g.fillText('sem dados ainda',pad.l,H/2);canvas._pts=null;return;}
+  let ys=pts.map(p=>p.y),ymin=Math.min(...ys),ymax=Math.max(...ys);
+  if(opts.zero){ymin=Math.min(0,ymin)}
+  if(ymax===ymin){ymax+=1;ymin-=1}
+  const span=ymax-ymin;ymin-=span*0.05;ymax+=span*0.05;
+  const x0=pts[0].x,x1=pts[pts.length-1].x;
+  const X=x=>pad.l+(x-x0)/(x1-x0||1)*(W-pad.l-pad.r),Y=y=>pad.t+(ymax-y)/(ymax-ymin)*(H-pad.t-pad.b);
+  // grid (4 lines) + y labels
+  g.strokeStyle=C('--grid');g.lineWidth=1;g.fillStyle=C('--muted');g.font='11px system-ui';g.textAlign='right';
+  for(let i=0;i<=4;i++){const y=ymin+(ymax-ymin)*i/4;const yy=Y(y);g.beginPath();g.moveTo(pad.l,yy);g.lineTo(W-pad.r,yy);g.stroke();g.fillText(opts.fmt(y),pad.l-6,yy+4);}
+  // baseline
+  if(opts.baseline!=null&&opts.baseline>=ymin&&opts.baseline<=ymax){g.strokeStyle=C('--axis');g.setLineDash([3,3]);g.beginPath();g.moveTo(pad.l,Y(opts.baseline));g.lineTo(W-pad.r,Y(opts.baseline));g.stroke();g.setLineDash([]);}
+  // x labels
+  g.textAlign='center';[0,0.5,1].forEach(f=>{const p=pts[Math.round(f*(pts.length-1))];g.fillText(fmtTs(p.x),X(p.x),H-6);});
+  // area + line
+  if(opts.fill){g.beginPath();g.moveTo(X(pts[0].x),Y(opts.baseline??ymin));pts.forEach(p=>g.lineTo(X(p.x),Y(p.y)));g.lineTo(X(pts[pts.length-1].x),Y(opts.baseline??ymin));g.closePath();g.fillStyle=opts.color+'22';g.fill();}
+  g.strokeStyle=opts.color;g.lineWidth=2;g.lineJoin='round';g.beginPath();pts.forEach((p,i)=>i?g.lineTo(X(p.x),Y(p.y)):g.moveTo(X(p.x),Y(p.y)));g.stroke();
+  // end marker
+  const last=pts[pts.length-1];g.fillStyle=opts.color;g.beginPath();g.arc(X(last.x),Y(last.y),4,0,7);g.fill();g.strokeStyle=C('--surface');g.lineWidth=2;g.stroke();
+  canvas._pts=pts;canvas._X=X;canvas._Y=Y;canvas._pad=pad;canvas._opts=opts;
+  if(!canvas._hover){canvas._hover=true;
+    canvas.addEventListener('mousemove',e=>{const r=canvas.getBoundingClientRect();const mx=e.clientX-r.left;const P=canvas._pts;if(!P)return;
+      let best=0,bd=1e9;P.forEach((p,i)=>{const d=Math.abs(canvas._X(p.x)-mx);if(d<bd){bd=d;best=i}});const p=P[best];
+      const g2=canvas.getContext('2d');lineChart(canvas,tipEl,P,canvas._opts);
+      const dpr2=window.devicePixelRatio||1;g2.save();g2.scale(dpr2,dpr2);g2.strokeStyle=C('--axis');g2.beginPath();g2.moveTo(canvas._X(p.x),canvas._pad.t);g2.lineTo(canvas._X(p.x),canvas.clientHeight-canvas._pad.b);g2.stroke();
+      g2.fillStyle=canvas._opts.color;g2.beginPath();g2.arc(canvas._X(p.x),canvas._Y(p.y),5,0,7);g2.fill();g2.strokeStyle=C('--surface');g2.lineWidth=2;g2.stroke();g2.restore();
+      tipEl.style.display='block';tipEl.innerHTML=`${fmtTs(p.x)}<br><b>${canvas._opts.fmt(p.y)}</b>${p.extra?'<br>'+p.extra:''}`;
+      const tx=Math.min(canvas._X(p.x)+12,canvas.clientWidth-tipEl.offsetWidth-4);tipEl.style.left=tx+'px';tipEl.style.top=Math.max(0,canvas._Y(p.y)-40)+'px';});
+    canvas.addEventListener('mouseleave',()=>{tipEl.style.display='none';lineChart(canvas,tipEl,canvas._pts,canvas._opts);});
+  }
+}
+
+// ---- state polling ----
+let S=null,hovering=false;
+function tag(cls,txt){return `<span class="tag ${cls}">${esc(txt)}</span>`}
+function render(s){
+  S=s;const L=s.limits||{};
+  $('#dotRun').className='dot'+(s.running?' on':'');$('#chipRun').textContent=s.running?'a correr':'parado';
+  $('#chipJudge').textContent=s.config?(s.config.judge==='jev'?'Jev':s.config.judge)+(s.config.brain?' + Brain':''):'—';
+  $('#chipEq').textContent=fmtUsd(s.equity);$('#chipDd').textContent=s.drawdown_pct==null?'—':s.drawdown_pct.toFixed(2)+'%';$('#chipDay').textContent=fmtPct(s.daily_pnl_pct);
+  $('#dotKill').className='dot'+(s.kill_switch?' crit':'');$('#chipKill').textContent=s.kill_switch?'ARMADO':'off';
+  $('#dotHalt').className='dot'+(s.halted?' warn':'');$('#chipHalt').textContent=s.halted?'SIM':'não';$('#chipHalt').title=s.halted||'';
+  $('#chipSchema').textContent=s.schema_version||'—';
+  $('#kEq').textContent=fmtUsd(s.equity);$('#kEqD').textContent='capital inicial '+fmtUsd(s.starting_equity);
+  const ret=s.equity&&s.starting_equity?(s.equity/s.starting_equity-1)*100:null;$('#kEq').className='v '+(ret>0?'up':ret<0?'down':'');
+  $('#kDd').textContent=s.drawdown_pct==null?'—':s.drawdown_pct.toFixed(2)+'%';$('#kDdD').textContent='limite '+(L.max_drawdown_pct??'—')+'%';$('#kDd').className='v '+(s.drawdown_pct>=L.max_drawdown_pct*0.5?'down':'');
+  $('#kDay').textContent=fmtPct(s.daily_pnl_pct);$('#kDayD').textContent='limite −'+(L.max_daily_loss_pct??'—')+'%';$('#kDay').className='v '+(s.daily_pnl_pct>0?'up':s.daily_pnl_pct<0?'down':'');
+  $('#kTicks').textContent=s.ticks;$('#kTicksD').textContent='falhas do juiz: '+s.judge_failures;
+  $('#kFills').textContent=s.fills.length;$('#kFillsD').textContent='escalações: '+s.escalations.length;
+  let gross=0;Object.values(s.latest).forEach(x=>gross+=Math.abs(x.position.qty)*x.snapshot.mid);
+  $('#kGross').textContent=s.equity?(gross/s.equity*100).toFixed(1)+'%':'—';$('#kGrossD').textContent='limite '+(L.max_gross_exposure_pct??'—')+'%';
+  $('#btnStart').disabled=s.running;$('#btnStop').disabled=!s.running;
+  $('#envNote').innerHTML=`chaves no ambiente: TYPESAFE ${s.env.typesafe_key?'✓':'✗'} · ANTHROPIC ${s.env.anthropic_key?'✓':'✗'}`+(s.error?`<div class="msg err">${esc(s.error)}</div>`:'');
+  if(s.gates){const g=s.gates;$('#gates').innerHTML=`setup_quality ≥ ${g.min_setup_quality} · direction_conf &gt; ${g.min_direction_conf} · risk_state = safe · regime ≠ crisis · P(tóxico) ≤ ${g.max_toxic_flow} · spread ≤ ${g.max_spread_bps} bps<br>tamanho = min(${g.kelly_cap}·Kelly, ${g.kelly_cap}) · profundidade ≥ ${g.min_depth_multiple}× ordem · escalar se conf &lt; ${g.escalate_below_conf}`;}
+  if(!hovering){
+    const ep=s.equity_series.map(r=>({x:r[0],y:r[1],extra:'DD '+r[2].toFixed(2)+'%'}));
+    lineChart($('#cEq'),$('#tEq'),ep,{color:getComputedStyle(document.documentElement).getPropertyValue('--s1').trim(),fmt:v=>v.toLocaleString('pt-PT',{maximumFractionDigits:0}),baseline:s.starting_equity,fill:true});
+    const dp=s.equity_series.map(r=>({x:r[0],y:-r[2]}));
+    lineChart($('#cDd'),$('#tDd'),dp,{color:getComputedStyle(document.documentElement).getPropertyValue('--crit').trim(),fmt:v=>v.toFixed(2)+'%',baseline:0,fill:true,zero:true});
+  }
+  // setups table
+  const tb=$('#tblSetups tbody');tb.innerHTML=Object.entries(s.latest).map(([sym,x])=>{const sn=x.snapshot,v=x.verdict,p=x.position;
+    const posTxt=p.qty?`${p.qty>0?'LONG':'SHORT'} ${Math.abs(p.qty).toFixed(4)} @ ${p.avg_price.toFixed(4)} · ${p.bars_held}b`:'—';
+    const state=x.blocked?x.blocked.replace(/_/g,' '):(p.qty?'em posição':(v?'porta aberta':'sem veredicto'));
+    const dirCls=v?v.direction:'';
+    return `<tr><td><b>${sym}</b></td><td>${sn.mid}</td><td>${sn.spr} bps</td><td>${v?tag(v.regime,v.regime+' '+(v.regime_conf*100).toFixed(0)+'%'):'—'}</td>
+      <td>${v?tag(dirCls,v.direction+' '+(v.direction_conf*100).toFixed(0)+'%'):'—'}</td><td>${v?v.setup_quality.toFixed(2)+' / 3':'—'}</td><td>${v?(v.toxic_flow_p*100).toFixed(0)+'%':'—'}</td>
+      <td>${v?tag(v.risk_state,v.risk_state):'—'}</td><td>${posTxt}</td><td class="${p.unrealized_usd>0?'up':p.unrealized_usd<0?'down':''}">${p.qty?fmtUsd(p.unrealized_usd):'—'}</td><td class="small">${esc(state)}</td></tr>`;}).join('')||'<tr><td colspan="11" class="small">sem dados: carrega ▶ Iniciar</td></tr>';
+  $('#tblFills tbody').innerHTML=s.fills.map(f=>`<tr><td>${fmtTs(f.ts)}</td><td>${f.symbol}</td><td>${tag(f.side==='buy'?'long':'short',f.side)}</td><td>${f.qty.toFixed(4)}</td><td>${f.price.toFixed(4)}</td><td>${f.slippage_bps.toFixed(1)}</td><td>${f.fee_usd.toFixed(2)}</td><td class="small">${f.reason}</td></tr>`).join('')||'<tr><td colspan="8" class="small">ainda sem fills</td></tr>';
+  $('#escList').innerHTML=s.escalations.map(e=>`<div>${fmtTs(e.ts)} · ${esc(e.text)}</div>`).join('')||'nenhuma';
+}
+['#cEq','#cDd'].forEach(id=>{$(id).addEventListener('mouseenter',()=>hovering=true);$(id).addEventListener('mouseleave',()=>hovering=false);});
+async function poll(){try{render(await api('/api/state'));}catch(e){$('#msgCtl').textContent='sem ligação ao servidor: '+e.message;$('#msgCtl').className='msg err';}}
+setInterval(poll,1500);poll();
+window.addEventListener('resize',()=>S&&render(S));
+
+// ---- controls ----
+$('#btnStart').onclick=async()=>{const m=$('#msgCtl');m.className='msg';m.textContent='a arrancar…';try{await api('/api/start',{judge:$('#fJudge').value,brain:$('#fBrain').checked,bars:+$('#fBars').value,delay_ms:+$('#fDelay').value,equity:+$('#fEquity').value,vol_bps:+$('#fVol').value,replay:$('#fReplay').value});m.textContent='loop a correr';poll();}catch(e){m.className='msg err';m.textContent=e.message;}};
+$('#btnStop').onclick=async()=>{await api('/api/stop',{});$('#msgCtl').textContent='a parar no fim da vela atual';};
+$('#btnKillArm').onclick=async()=>{if(!confirm('Armar o kill switch? Bloqueia TODAS as ordens automáticas, incluindo saídas.'))return;await api('/api/kill',{armed:true});$('#msgSafe').textContent='kill switch ARMADO';poll();};
+$('#btnKillDisarm').onclick=async()=>{await api('/api/kill',{armed:false});$('#msgSafe').textContent='kill switch desarmado';poll();};
+$('#btnClearHalt').onclick=async()=>{if(!confirm('Limpar o latch HALTED? Só depois de reveres o que o disparou.'))return;await api('/api/clear-halt',{});$('#msgSafe').textContent='HALTED limpo';poll();};
+
+// ---- review ----
+function md(t){let h=esc(t);h=h.replace(/^### (.*)$/gm,'<h3>$1</h3>').replace(/^## (.*)$/gm,'<h2>$1</h2>').replace(/^# (.*)$/gm,'<h1>$1</h1>');
+  h=h.replace(/^(\|.*\|)\n(\|[-| :]+\|)\n((?:\|.*\|\n?)*)/gm,(m,hd,sep,rows)=>{const cell=r=>r.trim().slice(1,-1).split('|').map(c=>c.trim());return '<table><thead><tr>'+cell(hd).map(c=>'<th>'+c+'</th>').join('')+'</tr></thead><tbody>'+rows.trim().split('\n').map(r=>'<tr>'+cell(r).map(c=>'<td>'+c+'</td>').join('')+'</tr>').join('')+'</tbody></table>';});
+  h=h.replace(/```([\s\S]*?)```/g,'<pre>$1</pre>').replace(/`([^`]+)`/g,'<code>$1</code>').replace(/\*\*([^*]+)\*\*/g,'<b>$1</b>').replace(/^- (.*)$/gm,'<li>$1</li>').replace(/(<li>[\s\S]*?<\/li>)(?!\s*<li>)/g,'<ul>$1</ul>').replace(/\[([^\]]+)\]\((https?:[^)]+)\)/g,'<a href="$2" target="_blank" rel="noopener">$1</a>').replace(/\n\n/g,'<br><br>');return h;}
+$('#btnReview').onclick=async()=>{const m=$('#msgRev');m.className='msg';m.textContent='a calcular…';try{const r=await api('/api/review',{});m.textContent='relatório gerado · proposta '+r.proposed_version;$('#revReport').innerHTML=md(r.report);$('#revProps').innerHTML=r.proposals.length?'<b>Propostas:</b> '+r.proposals.map(p=>`${p.symbol}: ${p.change} — ${esc(p.why)}`).join(' · '):'<b>Propostas:</b> nenhuma alteração (manter schema)';loadReviews();}catch(e){m.className='msg err';m.textContent=e.message;}};
+$('#btnApprove').onclick=async()=>{if(!confirm('Substituir config/setups.yaml pela proposta? Fica uma cópia em data/.'))return;const m=$('#msgRev');try{await api('/api/review/approve',{});m.className='msg';m.textContent='aprovado: aplica-se no próximo arranque do loop';}catch(e){m.className='msg err';m.textContent=e.message;}};
+async function loadReviews(){const r=await api('/api/reviews');$('#revHistory').innerHTML=r.length?r.map(x=>`<details><summary>${x.name}</summary><div class="md">${md(x.text)}</div></details>`).join(''):'nenhum';}
+
+// ---- config ----
+async function loadConfig(){const c=await api('/api/config');$('#cfgSetups').value=c.setups;$('#cfgRisk').value=c.risk;}
+document.querySelectorAll('[data-save]').forEach(b=>b.onclick=async()=>{const w=b.dataset.save;const m=$(w==='setups'?'#msgSetups':'#msgRisk');m.className='msg';try{const r=await api('/api/config',{which:w,text:$(w==='setups'?'#cfgSetups':'#cfgRisk').value});m.textContent=r.note;}catch(e){m.className='msg err';m.textContent='inválido: '+e.message;}});
+
+// ---- docs / journal ----
+async function loadDoc(){const r=await api('/api/doc?name='+encodeURIComponent($('#docSel').value));$('#docView').innerHTML=md(r.text);}
+$('#docSel').onchange=loadDoc;
+async function loadJournal(){const k=$('#jKind').value;const r=await api('/api/journal?n=300');$('#jView').textContent=r.filter(x=>!k||x.kind===k).map(x=>JSON.stringify(x)).join('\n')||'vazio';}
+$('#btnJ').onclick=loadJournal;
+</script>
+</body>
+</html>

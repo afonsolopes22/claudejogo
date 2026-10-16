@@ -10,6 +10,7 @@ pytest                 # must be green
 
 ## Rung 0 - plumbing (no network)
 ```bash
+python -m jev_trader.ui.server        # control panel at http://127.0.0.1:8787 (judge: Demo / Stub / Jev)
 python scripts/run_paper.py --bars 300
 python scripts/nightly_review.py && cat data/review-$(date -u +%F).md
 python scripts/killswitch.py arm && python scripts/run_paper.py --bars 20   # expect zero fills
