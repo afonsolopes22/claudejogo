@@ -4,6 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>jev-trader · painel</title>
+<link rel="icon" href="data:,">
 <style>
 :root{
   --page:#f9f9f7;--surface:#fcfcfb;--surface2:#f1f1ee;--ink:#0b0b0b;--ink2:#52514e;--muted:#898781;--grid:#e1e0d9;--axis:#c3c2b7;
@@ -66,6 +67,16 @@ pre,.md{font:12px/1.5 ui-monospace,SFMono-Regular,Menlo,monospace;white-space:pr
 .small{font-size:12px;color:var(--muted)}
 .gate{display:inline-block;width:9px;height:9px;border-radius:2px;margin-right:5px;vertical-align:middle;background:var(--muted)}
 .gate.ok{background:var(--good)}
+.badge{display:inline-block;min-width:18px;padding:0 5px;border-radius:9px;background:var(--crit);color:#fff;font-size:11px;text-align:center}
+.badge.zero{background:var(--surface2);color:var(--muted)}
+#toasts{position:fixed;right:16px;bottom:16px;display:flex;flex-direction:column;gap:8px;z-index:50;max-width:380px}
+.toast{background:var(--surface);border:1px solid var(--border);border-left:4px solid var(--muted);border-radius:10px;padding:10px 12px;box-shadow:0 6px 24px rgba(0,0,0,.25);animation:in .2s ease-out}
+.toast.long{border-left-color:var(--good)} .toast.short{border-left-color:var(--crit)} .toast.risk{border-left-color:var(--warn)} .toast.watch{border-left-color:var(--s1)}
+.toast b{display:block;margin-bottom:2px} .toast .small{color:var(--ink2)}
+@keyframes in{from{transform:translateY(8px);opacity:0}to{transform:none;opacity:1}}
+.alert-row{display:grid;grid-template-columns:110px 70px 1fr;gap:10px;padding:8px 0;border-bottom:1px solid var(--grid);font-size:13px}
+.alert-row .lv{font-size:11px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted)}
+.alert-row.long .lv{color:var(--good-text)} .alert-row.short .lv{color:var(--crit)} .alert-row.risk .lv{color:var(--serious)}
 .step{display:flex;gap:10px;margin:8px 0}.step .n{width:24px;height:24px;border-radius:50%;background:var(--s1);color:#fff;display:flex;align-items:center;justify-content:center;font-size:12px;flex:none}
 </style>
 </head>
@@ -81,10 +92,12 @@ pre,.md{font:12px/1.5 ui-monospace,SFMono-Regular,Menlo,monospace;white-space:pr
   <span class="chip"><span id="dotHalt" class="dot"></span>HALTED <b id="chipHalt">—</b></span>
   <span class="chip">schema <b id="chipSchema">—</b></span>
   <span style="flex:1"></span>
+  <button class="btn" id="bellBtn" title="alertas">🔔 <span id="bellCount" class="badge">0</span></button>
   <button class="btn" id="themeBtn" title="tema">◐</button>
 </header>
 <nav>
   <button data-tab="painel" class="active">Painel</button>
+  <button data-tab="alertas">Alertas</button>
   <button data-tab="revisao">Revisão noturna</button>
   <button data-tab="config">Configuração</button>
   <button data-tab="docs">Research &amp; docs</button>
@@ -160,6 +173,41 @@ pre,.md{font:12px/1.5 ui-monospace,SFMono-Regular,Menlo,monospace;white-space:pr
   </div>
 </section>
 
+<!-- ===================== ALERTAS ===================== -->
+<section class="tab" id="tab-alertas">
+  <div class="grid" style="grid-template-columns:320px 1fr">
+    <div>
+      <div class="card">
+        <h2>Canais</h2>
+        <label><input type="checkbox" id="nBrowser" style="width:auto"> Notificações do browser</label>
+        <div class="small" id="nBrowserState">—</div>
+        <label><input type="checkbox" id="nSound" style="width:auto"> Som</label>
+        <div class="small" style="margin-top:8px">Telegram: <b id="chTelegram">—</b> · Webhook: <b id="chWebhook">—</b><br>Configura <code>TELEGRAM_BOT_TOKEN</code>, <code>TELEGRAM_CHAT_ID</code> ou <code>JEV_WEBHOOK_URL</code> no ambiente antes de arrancar o servidor.</div>
+        <div class="row" style="margin-top:10px"><button class="btn" id="btnTestAlert">Enviar alerta de teste</button></div>
+        <div class="msg" id="msgAlert"></div>
+      </div>
+      <div class="card" style="margin-top:16px">
+        <h2>Níveis</h2>
+        <label><input type="checkbox" class="lv" value="setup" checked style="width:auto"> <b>Setup</b> — passou todas as portas (long/short)</label>
+        <label><input type="checkbox" class="lv" value="watch" checked style="width:auto"> <b>A formar</b> — qualidade ≥ 2 e confiança ≥ <span id="wcLabel">70</span>% mas ainda bloqueado</label>
+        <label><input type="checkbox" class="lv" value="fill" checked style="width:auto"> <b>Fills</b> — entradas, saídas, stops, alvos</label>
+        <label><input type="checkbox" class="lv" value="risk" checked style="width:auto"> <b>Risco</b> — HALTED, kill switch, Brain reduz/fecha</label>
+        <label>Confiança mínima para "a formar"</label><input id="wcInput" type="number" min="0.5" max="0.95" step="0.05" value="0.70">
+        <div class="row" style="margin-top:10px"><button class="btn primary" id="btnSaveLevels">Guardar níveis</button></div>
+        <div class="msg" id="msgLevels"></div>
+        <div class="small">Um alerta dispara na transição para ativo e só se re-arma após 3 velas inativo, para não repetir a cada vela.</div>
+      </div>
+    </div>
+    <div class="card">
+      <h2>Histórico de alertas <span class="small" id="alertFilterNote"></span></h2>
+      <div class="row"><select id="afLevel" style="width:auto"><option value="">todos os níveis</option><option value="setup">setup</option><option value="watch">a formar</option><option value="fill">fill</option><option value="risk">risco</option></select>
+        <select id="afDir" style="width:auto"><option value="">long e short</option><option value="long">só long</option><option value="short">só short</option></select>
+        <button class="btn" id="btnClearAlerts">Marcar como lidos</button></div>
+      <div id="alertList" style="margin-top:10px">sem alertas ainda</div>
+    </div>
+  </div>
+</section>
+
 <!-- ===================== REVISÃO ===================== -->
 <section class="tab" id="tab-revisao">
   <div class="card">
@@ -212,12 +260,14 @@ pre,.md{font:12px/1.5 ui-monospace,SFMono-Regular,Menlo,monospace;white-space:pr
     <div class="step"><div class="n">2</div><div><b>Testar a canalização sem rede.</b> No Painel, juiz = Demo, carrega ▶ Iniciar. O Demo inventa veredictos a partir do momentum do próprio tape (sem qualquer skill) só para veres entradas, saídas, escalações e o kill switch a funcionar. O Stub neutro nunca entra.</div></div>
     <div class="step"><div class="n">3</div><div><b>Ligar o Reflex real.</b> Cria uma chave em console.typesafe.ai, <code>export TYPESAFE_API_KEY=...</code> antes de arrancar o servidor, escolhe juiz = Jev. Cada vela faz UMA chamada com os 8 setups em paralelo. Opcional: <code>export ANTHROPIC_API_KEY=...</code> e marca "Escalar para Claude Opus 5.5".</div></div>
     <div class="step"><div class="n">4</div><div><b>Deixar correr em papel.</b> Tudo o que vês aqui é paper trading com um modelo de custos. Nenhuma ordem real pode sair deste repositório: o adaptador live está deliberadamente por implementar (docs/05-ship.md).</div></div>
-    <div class="step"><div class="n">5</div><div><b>Revisão noturna.</b> Separador "Revisão noturna" → Correr. Mede Brier/skill/ECE por setup, lista fills e misses e propõe um setups.yaml novo. Só substitui o atual quando carregares "Aprovar".</div></div>
-    <div class="step"><div class="n">6</div><div><b>Regra de sobrevivência.</b> Não passes de papel para dinheiro enquanto a revisão não mostrar skill &gt; 0 em pelo menos 2 setups com n ≥ 100. O sistema a não fazer nada é o estado correto até o merecer.</div></div>
+    <div class="step"><div class="n">5</div><div><b>Alertas de setups.</b> Separador "Alertas": ativa notificações do browser (pede permissão) e som. Para receber no telemóvel, cria um bot no @BotFather, exporta <code>TELEGRAM_BOT_TOKEN</code> e <code>TELEGRAM_CHAT_ID</code> antes de arrancar o servidor; ou <code>JEV_WEBHOOK_URL</code> para Discord/Slack. "Setup LONG/SHORT" dispara quando um símbolo passa todas as portas; "a formar" avisa antes.</div></div>
+    <div class="step"><div class="n">6</div><div><b>Revisão noturna.</b> Separador "Revisão noturna" → Correr. Mede Brier/skill/ECE por setup, lista fills e misses e propõe um setups.yaml novo. Só substitui o atual quando carregares "Aprovar".</div></div>
+    <div class="step"><div class="n">7</div><div><b>Regra de sobrevivência.</b> Não passes de papel para dinheiro enquanto a revisão não mostrar skill &gt; 0 em pelo menos 2 setups com n ≥ 100. O sistema a não fazer nada é o estado correto até o merecer.</div></div>
     <p class="small">As portas de entrada (qualidade ≥ 2, confiança &gt; 0.80, risco = safe), o quarter-Kelly e todos os limites estão em código (policy.py, risk.py). O Jev só responde a perguntas tipadas; o Brain só pode dizer resume / pause / reduce / flatten.</p>
   </div>
 </section>
 </main>
+<div id="toasts"></div>
 
 <script>
 const $=s=>document.querySelector(s);
@@ -314,6 +364,35 @@ function render(s){
 async function poll(){try{render(await api('/api/state'));}catch(e){$('#msgCtl').textContent='sem ligação ao servidor: '+e.message;$('#msgCtl').className='msg err';}}
 setInterval(poll,1500);poll();
 window.addEventListener('resize',()=>S&&render(S));
+
+// ---- alerts ----
+let lastAlertId=0,unread=0,ALERTS=[];
+const pref=(k,d)=>{try{const v=localStorage.getItem(k);return v==null?d:JSON.parse(v)}catch(e){return d}};
+const setPref=(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}};
+$('#nSound').checked=pref('sound',true);$('#nBrowser').checked=pref('browserNotif',false)&&('Notification' in window)&&Notification.permission==='granted';
+function beep(dir){if(!$('#nSound').checked)return;try{const ac=new (window.AudioContext||window.webkitAudioContext)();const o=ac.createOscillator(),g=ac.createGain();o.connect(g);g.connect(ac.destination);o.frequency.value=dir==='short'?440:660;g.gain.setValueAtTime(0.0001,ac.currentTime);g.gain.exponentialRampToValueAtTime(0.2,ac.currentTime+0.02);g.gain.exponentialRampToValueAtTime(0.0001,ac.currentTime+0.35);o.start();o.stop(ac.currentTime+0.4);}catch(e){}}
+function toast(a){const d=document.createElement('div');d.className='toast '+(a.level==='risk'?'risk':a.level==='watch'?'watch':(a.direction||''));d.innerHTML=`<b>${esc(a.title)}</b><div class="small">${esc(a.body)}</div>`;$('#toasts').appendChild(d);setTimeout(()=>d.remove(),a.level==='setup'?15000:8000);d.onclick=()=>d.remove();}
+function notify(a){if(!$('#nBrowser').checked||!('Notification' in window)||Notification.permission!=='granted')return;try{new Notification(a.title,{body:a.body,tag:a.symbol+a.level+a.direction,silent:true});}catch(e){}}
+function renderBell(){const b=$('#bellCount');b.textContent=unread;b.className='badge'+(unread?'':' zero');document.title=(unread?`(${unread}) `:'')+'jev-trader · painel';}
+function renderAlerts(){const lv=$('#afLevel').value,dr=$('#afDir').value;const rows=ALERTS.filter(a=>(!lv||a.level===lv)&&(!dr||a.direction===dr));$('#alertFilterNote').textContent=`${rows.length} de ${ALERTS.length}`;
+  $('#alertList').innerHTML=rows.map(a=>`<div class="alert-row ${a.level==='risk'?'risk':(a.direction||'')}"><div class="small">${fmtTs(a.ts)}</div><div class="lv">${a.level}</div><div><b>${esc(a.title)}</b><div class="small">${esc(a.body)}</div></div></div>`).join('')||'sem alertas';}
+async function pollAlerts(){try{const r=await api('/api/alerts?since='+lastAlertId);
+  $('#chTelegram').textContent=r.channels.telegram?'✓ configurado':'✗';$('#chWebhook').textContent=r.channels.webhook?'✓ configurado':'✗';
+  if(r.alerts.length){r.alerts.sort((a,b)=>a.id-b.id);for(const a of r.alerts){lastAlertId=Math.max(lastAlertId,a.id);ALERTS.unshift(a);if(a.symbol!=='TEST'||true){toast(a);notify(a);}if(a.level==='setup')beep(a.direction);unread++;}ALERTS=ALERTS.slice(0,500);renderBell();renderAlerts();}
+  }catch(e){}}
+setInterval(pollAlerts,1500);pollAlerts();
+$('#bellBtn').onclick=()=>{document.querySelector('nav button[data-tab="alertas"]').click();unread=0;renderBell();};
+$('#btnClearAlerts').onclick=()=>{unread=0;renderBell();};
+$('#afLevel').onchange=renderAlerts;$('#afDir').onchange=renderAlerts;
+$('#nSound').onchange=()=>setPref('sound',$('#nSound').checked);
+$('#nBrowser').onchange=async()=>{if(!('Notification' in window)){$('#nBrowserState').textContent='este browser não suporta notificações';$('#nBrowser').checked=false;return;}
+  if($('#nBrowser').checked){const p=await Notification.requestPermission();if(p!=='granted'){$('#nBrowser').checked=false;$('#nBrowserState').textContent='permissão recusada';return;}}
+  setPref('browserNotif',$('#nBrowser').checked);$('#nBrowserState').textContent=$('#nBrowser').checked?'ativas (também com o separador em segundo plano)':'desativadas';};
+$('#nBrowserState').textContent=('Notification' in window)?('permissão: '+Notification.permission):'não suportado';
+$('#btnTestAlert').onclick=async()=>{const m=$('#msgAlert');try{await api('/api/alerts/test',{});m.className='msg';m.textContent='enviado para todos os canais configurados';}catch(e){m.className='msg err';m.textContent=e.message;}};
+$('#wcInput').oninput=()=>$('#wcLabel').textContent=Math.round($('#wcInput').value*100);
+$('#btnSaveLevels').onclick=async()=>{const levels=[...document.querySelectorAll('.lv:checked')].map(x=>x.value);const m=$('#msgLevels');try{const r=await api('/api/alerts/config',{levels,watch_conf:+$('#wcInput').value});m.className='msg';m.textContent='níveis ativos: '+r.levels.join(', ');}catch(e){m.className='msg err';m.textContent=e.message;}};
+(async()=>{try{const r=await api('/api/alerts?since=0');document.querySelectorAll('.lv').forEach(x=>x.checked=r.levels.includes(x.value));$('#wcInput').value=r.watch_conf;$('#wcLabel').textContent=Math.round(r.watch_conf*100);}catch(e){}})();
 
 // ---- controls ----
 $('#btnStart').onclick=async()=>{const m=$('#msgCtl');m.className='msg';m.textContent='a arrancar…';try{await api('/api/start',{judge:$('#fJudge').value,brain:$('#fBrain').checked,bars:+$('#fBars').value,delay_ms:+$('#fDelay').value,equity:+$('#fEquity').value,vol_bps:+$('#fVol').value,replay:$('#fReplay').value});m.textContent='loop a correr';poll();}catch(e){m.className='msg err';m.textContent=e.message;}};

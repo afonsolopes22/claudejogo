@@ -9,6 +9,7 @@ import shutil
 import sys
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
+from typing import Optional
 from urllib.parse import parse_qs, urlparse
 
 import yaml
@@ -16,6 +17,8 @@ import yaml
 from ..review.nightly import propose_revision, review, write_proposed_book, write_report
 from ..risk import RiskLimits, load_limits
 from ..schema import SetupBook, load_setups
+from ..alerts import AlertConfig, AlertManager, sinks_from_env
+from ..policy import Gates, Policy
 from .runner import RunConfig, Runner
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -57,6 +60,33 @@ class Api:
             return []
         lines = p.read_text().splitlines()[-n:]
         return [json.loads(l) for l in lines if l.strip()]
+
+    def alerts(self, since: int) -> dict:
+        return {
+            "alerts": [a.model_dump(mode="json") for a in self.runner.alert_sink.since(since)],
+            "channels": {
+                "telegram": bool(os.environ.get("TELEGRAM_BOT_TOKEN") and os.environ.get("TELEGRAM_CHAT_ID")),
+                "webhook": bool(os.environ.get("JEV_WEBHOOK_URL")),
+            },
+            "levels": sorted(self.runner.alert_config.levels),
+            "watch_conf": self.runner.alert_config.watch_conf,
+        }
+
+    def set_alert_levels(self, levels: list[str], watch_conf: Optional[float]) -> dict:
+        ok = {"setup", "watch", "fill", "risk"}
+        bad = set(levels) - ok
+        if bad:
+            raise ValueError(f"níveis inválidos: {sorted(bad)}")
+        cfg = self.runner.alert_config
+        cfg.levels = frozenset(levels)
+        if watch_conf is not None:
+            cfg.watch_conf = float(watch_conf)
+        return {"ok": True, "levels": sorted(cfg.levels), "watch_conf": cfg.watch_conf}
+
+    def test_alert(self) -> dict:
+        mgr = self.runner.alerts or AlertManager(policy=Policy(Gates()), sinks=[self.runner.alert_sink, *sinks_from_env()], config=self.runner.alert_config)
+        a = mgr.test_alert()
+        return {"ok": True, "alert": a.model_dump(mode="json")}
 
     def reviews(self) -> list[dict]:
         out = []
@@ -178,6 +208,8 @@ class Handler(BaseHTTPRequestHandler):
                 return self._json(API.journal_tail(int(q.get("n", ["200"])[0])))
             if u.path == "/api/reviews":
                 return self._json(API.reviews())
+            if u.path == "/api/alerts":
+                return self._json(API.alerts(int(q.get("since", ["0"])[0])))
             return self._json({"error": "not found"}, 404)
         except Exception as e:
             return self._json({"error": str(e)}, 400)
@@ -201,6 +233,10 @@ class Handler(BaseHTTPRequestHandler):
                 return self._json(API.run_review())
             if u.path == "/api/review/approve":
                 return self._json(API.approve_review())
+            if u.path == "/api/alerts/test":
+                return self._json(API.test_alert())
+            if u.path == "/api/alerts/config":
+                return self._json(API.set_alert_levels(body.get("levels", []), body.get("watch_conf")))
             return self._json({"error": "not found"}, 404)
         except Exception as e:
             return self._json({"error": str(e)}, 400)

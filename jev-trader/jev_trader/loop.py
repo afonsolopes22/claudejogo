@@ -12,6 +12,7 @@ import time
 from dataclasses import dataclass, field
 from typing import Optional
 
+from .alerts import AlertManager
 from .escalation import EscalationGovernor, Escalator, NullEscalator
 from .execution.base import ExchangeAdapter
 from .jev_client import Judge, JudgeUnavailable
@@ -46,6 +47,7 @@ class TradingLoop:
     escalator: Escalator = field(default_factory=NullEscalator)
     starting_equity: float = 10_000.0
     state_engine: StateEngine = field(default_factory=StateEngine)
+    alerts: Optional[AlertManager] = None
 
     def __post_init__(self) -> None:
         self.equity = EquityTracker(self.starting_equity)
@@ -122,6 +124,8 @@ class TradingLoop:
                 self.governor.record(sym, ts, bv)
                 self.journal.write("escalation", ts, {"symbol": sym, "trigger": trig, "brain": bv})
                 escalations.append(f"{sym}:{trig}:{bv.action}")
+                if self.alerts and bv.action in ("reduce", "flatten", "pause"):
+                    self.alerts.on_risk(ts, sym, f"BRAIN → {bv.action.upper()}", f"gatilho: {trig} · {bv.rationale}")
                 if bv.action in ("reduce", "flatten") and pos.qty != 0:
                     frac = 0.5 if bv.action == "reduce" else 1.0
                     qty = abs(pos.qty) * frac
@@ -132,6 +136,14 @@ class TradingLoop:
                     if fill:
                         fills.append(fill)
                     continue
+
+            if self.alerts:
+                if v is not None:
+                    self.alerts.on_verdict(snap, v, pos, self.equity, setup)
+                else:
+                    self.alerts.on_judge_missing(sym)
+                    if pos.qty != 0:
+                        self.alerts.on_risk(ts, sym, "JUIZ INDISPONÍVEL", "em posição sem veredicto; saídas por stop/alvo continuam ativas")
 
             intent = self.policy.decide(snap, v, pos, self.equity, setup)
             if intent is None:
@@ -162,6 +174,8 @@ class TradingLoop:
         dec = self.risk.check(intent, self._marks)
         self.journal.write("risk", ts, {"symbol": intent.symbol, "allowed": dec.allowed, "reason": dec.reason})
         if not dec.allowed or dec.approval is None:
+            if self.alerts and dec.reason in ("max_drawdown", "max_daily_loss", "kill_switch_armed"):
+                self.alerts.on_risk(ts, intent.symbol, dec.reason.upper(), f"ordem {intent.reason} {intent.side.value} {intent.qty:g} recusada pelo motor de risco")
             return None
         fill = self.exchange.submit(intent, dec.approval, book)
         if fill is None:
@@ -169,6 +183,8 @@ class TradingLoop:
             return None
         self._apply_fill(fill)
         self.journal.write("fill", ts, {"symbol": fill.symbol, "fill": fill})
+        if self.alerts:
+            self.alerts.on_fill(fill)
         return fill
 
     def _apply_fill(self, f: Fill) -> None:

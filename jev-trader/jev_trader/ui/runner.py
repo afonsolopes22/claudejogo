@@ -10,7 +10,9 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Optional
 
+from ..alerts import AlertConfig, AlertManager, JournalSink, MemorySink, sinks_from_env
 from ..escalation import NullEscalator
+from ..policy import Gates, Policy
 from ..execution import JsonlFeed, PaperExchange, SyntheticFeed
 from ..jev_client import StubJudge
 from ..journal import Journal
@@ -54,6 +56,9 @@ class Runner:
     def __init__(self, root: Path):
         self.root = root
         self.state = RunnerState()
+        self.alert_sink = MemorySink()
+        self.alert_config = AlertConfig()
+        self.alerts: Optional[AlertManager] = None
         self.loop: Optional[TradingLoop] = None
         self._thread: Optional[threading.Thread] = None
         self._stop = threading.Event()
@@ -90,7 +95,10 @@ class Runner:
             from ..escalation import ClaudeEscalator
 
             escalator = ClaudeEscalator()
-        return TradingLoop(book=book, judge=judge, exchange=PaperExchange(), journal=Journal(self.root / cfg.journal), limits=limits, escalator=escalator, starting_equity=cfg.equity)
+        journal = Journal(self.root / cfg.journal)
+        gates = Gates()
+        self.alerts = AlertManager(policy=Policy(gates), sinks=[self.alert_sink, JournalSink(journal), *sinks_from_env()], config=self.alert_config)
+        return TradingLoop(book=book, judge=judge, exchange=PaperExchange(), journal=journal, limits=limits, escalator=escalator, starting_equity=cfg.equity, gates=gates, alerts=self.alerts)
 
     def _run(self, cfg: RunConfig) -> None:
         try:
