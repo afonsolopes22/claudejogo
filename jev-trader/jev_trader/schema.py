@@ -89,7 +89,13 @@ _SNAPSHOT_LEGEND = (
     "state.snapshots[] fields (all numeric, computed in code, nothing newer than ts): "
     "sym, ts(ms), mid, spr(spread bps), imb(book imbalance -1..1), dep(depth USD), rvS/rvL(realized vol bps short/long), "
     "rS/rL(return bps short/long), flow(signed taker flow -1..1), inv(position units), invPct(|notional|/equity %), "
-    "uPnl(unrealized %), dd(drawdown %), dPnl(today %), held(bars in position), fund(funding bps/8h, if known)."
+    "uPnl(unrealized %), dd(drawdown %), dPnl(today %), held(bars in position), fund(funding bps/8h, if known). "
+    "lv = market structure, all distances in bps from mid (positive = above mid): atr(ATR bps), poc/vah/val(current daily-session "
+    "volume profile), va(-1 below value area, 0 inside, +1 above), pPoc(previous session POC), nPoc(nearest naked/untested prior "
+    "POC), cPoc/cVah/cVal(5-session composite profile), liqA/liqB(nearest liquidity pool above/below) with liqAk/liqBk kind "
+    "(1 swing high/low, 2 equal highs/lows, 3 prior-session extreme, 4 composite VA edge), swp(+1 swept a high and closed back "
+    "below = bearish sweep, -1 swept a low and closed back above = bullish sweep, 0 none) with swpAge(bars ago), rt(+1 retesting a "
+    "broken level from above as support, -1 from below as resistance, 0 none) with rtBps, sbar(bars since session open)."
 )
 
 
@@ -118,7 +124,10 @@ def compile_questions(book: SetupBook, hints: RiskHints) -> dict[str, dict]:
             "type": "choice",
             "instructions": (
                 f"{ctx} Thesis: {s.thesis} Invalidation signs: {'; '.join(s.invalidation)}. {bias_txt} "
-                f"Which direction has positive expectancy over the next {s.horizon_bars} candles, net of ~{s.stop_bps/10:.0f}bps costs?"
+                f"Which direction has positive expectancy over the next {s.horizon_bars} candles, net of ~{s.stop_bps/10:.0f}bps costs? "
+                "Weigh market structure: a bullish liquidity sweep (lv.swp=-1) or support retest (lv.rt=+1) favours long; a bearish "
+                "sweep (lv.swp=+1) or resistance retest (lv.rt=-1) favours short; price above the value area with the composite POC "
+                "far below is extended; the nearest liquidity pool is where price is drawn to."
             ),
             "criteria": {
                 "long": "price more likely to rise by the target than fall to the stop",
@@ -138,10 +147,10 @@ def compile_questions(book: SetupBook, hints: RiskHints) -> dict[str, dict]:
             "type": "score",
             "instructions": f"{ctx} Thesis: {s.thesis} Bear case: {s.bear_case} Rate the quality of acting on this setup NOW.",
             "criteria": [
-                "0: thesis inactive or invalidated by the tape; or regime is crisis",
-                "1: weak: tape mixed, regime unfavourable to the thesis, or costs (spr) eat the edge",
-                "2: good: regime favourable, price action aligned with the thesis, costs acceptable, flow not adverse",
-                "3: excellent: all of (2) plus clear momentum/mean-reversion confirmation and deep book",
+                "0: thesis inactive or invalidated by the tape; regime is crisis; or price is mid-range inside the value area with no structure (no sweep, no retest, far from POC/VAH/VAL and from any liquidity pool)",
+                "1: weak: tape mixed or regime unfavourable; price near a level but without a completed sweep or retest; or the nearest liquidity pool sits in the way of the target (liqA for a long, liqB for a short) closer than the stop distance",
+                "2: good: regime favourable and price action aligned with the thesis AT structure: a bullish sweep (swp=-1) or a retest holding as support (rt=+1) for a long, a bearish sweep (swp=+1) or a resistance retest (rt=-1) for a short, or a VAL/VAH rejection back into value, with flow confirming and costs acceptable",
+                "3: excellent: all of (2) plus confluence: the level is a naked POC, composite VA edge or equal highs/lows; the sweep is fresh (swpAge<=3); the path to the target has no liquidity pool before it; deep book",
             ],
         }
         q[p + "risk_state"] = {

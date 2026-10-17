@@ -17,6 +17,7 @@ from .escalation import EscalationGovernor, Escalator, NullEscalator
 from .execution.base import ExchangeAdapter
 from .jev_client import Judge, JudgeUnavailable
 from .journal import Journal
+from .levels import LevelEngine
 from .policy import Gates, Policy
 from .risk import RiskEngine, RiskLimits
 from .schema import RiskHints, SetupBook, compile_questions, parse_verdicts, schema_version
@@ -48,6 +49,7 @@ class TradingLoop:
     starting_equity: float = 10_000.0
     state_engine: StateEngine = field(default_factory=StateEngine)
     alerts: Optional[AlertManager] = None
+    levels: Optional[LevelEngine] = field(default_factory=LevelEngine)
 
     def __post_init__(self) -> None:
         self.equity = EquityTracker(self.starting_equity)
@@ -90,7 +92,8 @@ class TradingLoop:
             pos = self.positions[sym]
             self._marks[sym] = book.mid()
             self._mark_equity(ts)
-            snaps[sym] = self.state_engine.update(book, pos, self.equity)
+            lv = self.levels.on_candle(sym, book.ts, trades, book.mid()).compact() if self.levels else None
+            snaps[sym] = self.state_engine.update(book, pos, self.equity, levels=lv)
             books[sym] = book
             self.journal.write("snapshot", ts, {"symbol": sym, "snapshot": snaps[sym].compact()})
 

@@ -160,9 +160,9 @@ pre,.md{font:12px/1.5 ui-monospace,SFMono-Regular,Menlo,monospace;white-space:pr
         <div class="chart" style="height:140px"><canvas id="cDd"></canvas><div class="tip" id="tDd"></div></div>
       </div>
       <div class="card" style="margin-top:16px">
-        <h2>Setups ao vivo · último veredicto do Jev</h2>
+        <h2>Setups ao vivo · último veredicto do Jev <span class="small">(distâncias em bps a partir do mid; perfil de volume da sessão diária UTC, composto de 5 sessões)</span></h2>
         <div style="overflow:auto"><table id="tblSetups"><thead><tr>
-          <th>Símbolo</th><th>Mid</th><th>Spread</th><th>Regime</th><th>Direção</th><th>Qualidade</th><th>Fluxo tóxico</th><th>Risco</th><th>Posição</th><th>uPnL</th><th>Estado</th>
+          <th>Símbolo</th><th>Mid</th><th>Regime</th><th>Direção</th><th>Qualidade</th><th>Tóxico</th><th>Risco</th><th>Área de valor</th><th>Liquidez</th><th>Estrutura</th><th>Posição</th><th>uPnL</th><th>Estado</th>
         </tr></thead><tbody></tbody></table></div>
       </div>
       <div class="grid" style="grid-template-columns:1fr 1fr;margin-top:16px">
@@ -353,10 +353,15 @@ function render(s){
   const tb=$('#tblSetups tbody');tb.innerHTML=Object.entries(s.latest).map(([sym,x])=>{const sn=x.snapshot,v=x.verdict,p=x.position;
     const posTxt=p.qty?`${p.qty>0?'LONG':'SHORT'} ${Math.abs(p.qty).toFixed(4)} @ ${p.avg_price.toFixed(4)} · ${p.bars_held}b`:'—';
     const state=x.blocked?x.blocked.replace(/_/g,' '):(p.qty?'em posição':(v?'porta aberta':'sem veredicto'));
-    const dirCls=v?v.direction:'';
-    return `<tr><td><b>${sym}</b></td><td>${sn.mid}</td><td>${sn.spr} bps</td><td>${v?tag(v.regime,v.regime+' '+(v.regime_conf*100).toFixed(0)+'%'):'—'}</td>
+    const dirCls=v?v.direction:'';const lv=sn.lv||{};
+    const vaTxt=('va' in lv)?`${{'-1':'abaixo','0':'dentro','1':'acima'}[lv.va]} · POC ${lv.poc>0?'+':''}${lv.poc} · VAH ${lv.vah>0?'+':''}${lv.vah} · VAL ${lv.val>0?'+':''}${lv.val}`:'—';
+    const kind=k=>({1:'swing',2:'iguais',3:'sessão ant.',4:'VA comp.'}[k]||'');
+    const liqTxt=(lv.liqA!=null||lv.liqB!=null)?`${lv.liqA!=null?'↑ +'+lv.liqA+' '+kind(lv.liqAk):''}${lv.liqA!=null&&lv.liqB!=null?'<br>':''}${lv.liqB!=null?'↓ '+lv.liqB+' '+kind(lv.liqBk):''}`:'—';
+    const st=[];if(lv.swp===-1)st.push(tag('long','sweep mín. '+lv.swpAge+'v'));if(lv.swp===1)st.push(tag('short','sweep máx. '+lv.swpAge+'v'));if(lv.rt===1)st.push(tag('long','retest suporte '+(lv.rtBps>0?'+':'')+lv.rtBps));if(lv.rt===-1)st.push(tag('short','retest resist. '+(lv.rtBps>0?'+':'')+lv.rtBps));if(lv.nPoc!=null)st.push(tag('','POC virgem '+(lv.nPoc>0?'+':'')+lv.nPoc));
+    const stTxt=st.length?st.join(' '):'<span class="small">sem estrutura</span>';
+    return `<tr><td><b>${sym}</b></td><td>${sn.mid}<div class="small">spr ${sn.spr} · ATR ${lv.atr??'—'}</div></td><td>${v?tag(v.regime,v.regime+' '+(v.regime_conf*100).toFixed(0)+'%'):'—'}</td>
       <td>${v?tag(dirCls,v.direction+' '+(v.direction_conf*100).toFixed(0)+'%'):'—'}</td><td>${v?v.setup_quality.toFixed(2)+' / 3':'—'}</td><td>${v?(v.toxic_flow_p*100).toFixed(0)+'%':'—'}</td>
-      <td>${v?tag(v.risk_state,v.risk_state):'—'}</td><td>${posTxt}</td><td class="${p.unrealized_usd>0?'up':p.unrealized_usd<0?'down':''}">${p.qty?fmtUsd(p.unrealized_usd):'—'}</td><td class="small">${esc(state)}</td></tr>`;}).join('')||'<tr><td colspan="11" class="small">sem dados: carrega ▶ Iniciar</td></tr>';
+      <td>${v?tag(v.risk_state,v.risk_state):'—'}</td><td class="small wrap">${vaTxt}</td><td class="small">${liqTxt}</td><td class="wrap">${stTxt}</td><td>${posTxt}</td><td class="${p.unrealized_usd>0?'up':p.unrealized_usd<0?'down':''}">${p.qty?fmtUsd(p.unrealized_usd):'—'}</td><td class="small">${esc(state)}</td></tr>`;}).join('')||'<tr><td colspan="13" class="small">sem dados: carrega ▶ Iniciar</td></tr>';
   $('#tblFills tbody').innerHTML=s.fills.map(f=>`<tr><td>${fmtTs(f.ts)}</td><td>${f.symbol}</td><td>${tag(f.side==='buy'?'long':'short',f.side)}</td><td>${f.qty.toFixed(4)}</td><td>${f.price.toFixed(4)}</td><td>${f.slippage_bps.toFixed(1)}</td><td>${f.fee_usd.toFixed(2)}</td><td class="small">${f.reason}</td></tr>`).join('')||'<tr><td colspan="8" class="small">ainda sem fills</td></tr>';
   $('#escList').innerHTML=s.escalations.map(e=>`<div>${fmtTs(e.ts)} · ${esc(e.text)}</div>`).join('')||'nenhuma';
 }

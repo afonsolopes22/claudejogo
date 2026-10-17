@@ -57,6 +57,7 @@ class Snapshot(Frozen):
     daily_pnl_pct: float
     funding_bps_8h: Optional[float] = Field(default=None, description="latest funding rate (bps/8h) with event ts <= ts, else None")
     bars_held: int = Field(ge=0)
+    levels: Optional[dict] = Field(default=None, description="market-structure context from levels.LevelEngine (compact dict), computed in code")
 
     def compact(self) -> dict:
         """Numeric-only, rounded. Token budget enforced in state_engine.estimate_tokens."""
@@ -81,6 +82,8 @@ class Snapshot(Frozen):
         }
         if self.funding_bps_8h is not None:
             d["fund"] = round(self.funding_bps_8h, 2)
+        if self.levels:
+            d["lv"] = self.levels
         return d
 
 

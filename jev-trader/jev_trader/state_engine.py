@@ -136,7 +136,7 @@ class StateEngine:
             raise CausalityError("out-of-order funding")
         st.funding = f
 
-    def update(self, book: L2Book, position: Position, equity: EquityTracker) -> Snapshot:
+    def update(self, book: L2Book, position: Position, equity: EquityTracker, levels: Optional[dict] = None) -> Snapshot:
         """Ingest one book and emit the snapshot *as of book.ts*. Raises on causality violations."""
         st = self._state(book.symbol)
         if book.ts <= st.last_book_ts:
@@ -198,6 +198,7 @@ class StateEngine:
             daily_pnl_pct=equity.daily_pnl_pct,
             funding_bps_8h=funding_bps,
             bars_held=position.bars_held,
+            levels=levels,
         )
         if estimate_tokens(snap.compact()) > TOKEN_BUDGET:
             raise ValueError("snapshot exceeds token budget")  # pragma: no cover - structural guarantee

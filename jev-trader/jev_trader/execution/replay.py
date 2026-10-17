@@ -55,12 +55,16 @@ class SyntheticFeed:
         for i in range(self.n_bars):
             ts = self.start_ts + i * self.bar_ms
             for s in self.symbols:
-                px[s] *= math.exp(rng.gauss(self.drift_bps, self.vol_bps) / 1e4)
-                mid = px[s]
+                # intra-bar random walk: n_trades steps, each a trade; the bar closes at the last step
+                n = 24
+                p = px[s]
+                trades = []
+                for j in range(n):
+                    p *= math.exp(rng.gauss(self.drift_bps / n, self.vol_bps / math.sqrt(n)) / 1e4)
+                    trades.append(Trade(s, ts - self.bar_ms + (j + 1) * (self.bar_ms // (n + 1)), p, max(1e-9, rng.lognormvariate(0, 1)) * self.depth_usd / 5 / p * 0.05, rng.random() < 0.5))
+                px[s] = mid = p
                 h = mid * self.spread_bps / 2e4
                 lvl_q = self.depth_usd / 5 / mid
                 bids = [BookLevel(mid - h - k * h, lvl_q) for k in range(5)]
                 asks = [BookLevel(mid + h + k * h, lvl_q) for k in range(5)]
-                trades = [Trade(s, ts - rng.randint(1, self.bar_ms - 1), mid, lvl_q * 0.1, rng.random() < 0.5) for _ in range(5)]
-                trades.sort(key=lambda t: t.ts)
                 yield L2Book(s, ts, bids, asks), trades, None

@@ -200,9 +200,20 @@ class AlertManager:
         if self._transition((snap.symbol, d, "setup"), is_setup) and is_setup:
             intent = self.policy.entry_intent(snap, v, Position(symbol=snap.symbol), equity, setup)
             size = f" · tamanho {intent.notional_usd:,.0f} USD (¼ Kelly, p={intent.p_win:.2f})" if intent else ""
+            lv = snap.levels or {}
+            struct = []
+            if lv.get("swp"):
+                struct.append(("sweep de mínimo (bullish)" if lv["swp"] == -1 else "sweep de máximo (bearish)") + f" há {lv.get('swpAge', 0)} velas")
+            if lv.get("rt"):
+                struct.append(("retest como suporte" if lv["rt"] == 1 else "retest como resistência") + f" a {lv.get('rtBps', 0):+.0f} bps")
+            if "va" in lv:
+                struct.append({-1: "abaixo da área de valor", 0: "dentro da área de valor", 1: "acima da área de valor"}[lv["va"]] + f" (POC {lv.get('poc', 0):+.0f} bps)")
+            if lv.get("liqA") is not None and lv.get("liqB") is not None:
+                struct.append(f"liquidez {lv['liqA']:+.0f}/{lv['liqB']:+.0f} bps")
+            structure = (" · " + " · ".join(struct)) if struct else ""
             out.append(self.emit(snap.ts, "setup", snap.symbol, f"{_ICON[d]} SETUP {d.upper()} {snap.symbol} @ {snap.mid:g}",
                 f"qualidade {v.setup_quality:.2f}/3 · confiança {v.direction_conf:.0%} · regime {v.regime.value} · P(tóxico) {v.toxic_flow_p:.0%}"
-                f" · stop {setup.stop_bps:g} bps / alvo {setup.target_bps:g} bps{size}" + (" · já em posição" if pos.qty else ""),
+                f" · stop {setup.stop_bps:g} bps / alvo {setup.target_bps:g} bps{size}{structure}" + (" · já em posição" if pos.qty else ""),
                 direction=d, data={"verdict": v.model_dump(mode="json"), "mid": snap.mid}))
         if self._transition((snap.symbol, d, "watch"), is_watch) and is_watch:
             out.append(self.emit(snap.ts, "watch", snap.symbol, f"👀 A FORMAR {d.upper()} {snap.symbol} @ {snap.mid:g}",
