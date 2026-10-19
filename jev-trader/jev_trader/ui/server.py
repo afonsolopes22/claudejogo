@@ -12,7 +12,7 @@ from pathlib import Path
 from typing import Optional
 from urllib.parse import parse_qs, urlparse
 
-import yaml
+from .. import _yaml
 
 from ..review.nightly import propose_revision, review, write_proposed_book, write_report
 from ..risk import RiskLimits, load_limits
@@ -132,7 +132,7 @@ class Api:
         return {"ok": True}
 
     def save_config(self, which: str, text: str) -> dict:
-        data = yaml.safe_load(text)
+        data = _yaml.load(text)
         if which == "setups":
             SetupBook.model_validate(data)
             path = self.root / "config/setups.yaml"

@@ -15,7 +15,7 @@ import json
 from pathlib import Path
 from typing import Optional
 
-import yaml
+from . import _yaml
 from pydantic import BaseModel, ConfigDict, Field
 
 from .state_engine import EquityTracker
@@ -36,7 +36,7 @@ class RiskLimits(BaseModel):
 
 def load_limits(path: str | Path) -> RiskLimits:
     with open(path) as f:
-        return RiskLimits.model_validate(yaml.safe_load(f))
+        return RiskLimits.model_validate(_yaml.load(f.read()))
 
 
 class RiskDecision(BaseModel):

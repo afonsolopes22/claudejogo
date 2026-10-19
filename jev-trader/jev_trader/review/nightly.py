@@ -10,7 +10,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Optional
 
-import yaml
+from .. import _yaml
 
 from ..journal import Journal
 from ..schema import SetupBook
@@ -180,4 +180,4 @@ def write_report(path: str | Path, reviews: dict[str, SymbolReview], proposal: d
 
 
 def write_proposed_book(path: str | Path, proposal: dict) -> None:
-    Path(path).write_text(yaml.safe_dump(proposal["proposed_book"], sort_keys=False))
+    Path(path).write_text(_yaml.dump(proposal["proposed_book"]))

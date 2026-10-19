@@ -11,7 +11,7 @@ import json
 from pathlib import Path
 from typing import Literal, Optional
 
-import yaml
+from . import _yaml
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from .types import Direction, Regime, RiskState, Verdict
@@ -80,7 +80,7 @@ class SetupBook(BaseModel):
 
 def load_setups(path: str | Path) -> SetupBook:
     with open(path) as f:
-        return SetupBook.model_validate(yaml.safe_load(f))
+        return SetupBook.model_validate(_yaml.load(f.read()))
 
 
 # ---- compilation ------------------------------------------------------------
