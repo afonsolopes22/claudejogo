@@ -5,3 +5,4 @@ data/*.jsonl
 data/KILL
 data/HALTED
 .env
+*.egg-info/
