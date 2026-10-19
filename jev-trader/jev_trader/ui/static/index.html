@@ -371,7 +371,7 @@ setInterval(poll,1500);poll();
 window.addEventListener('resize',()=>S&&render(S));
 
 // ---- alerts ----
-let lastAlertId=0,unread=0,ALERTS=[];
+let lastAlertId=0,unread=0,ALERTS=[],seeded=false;
 const pref=(k,d)=>{try{const v=localStorage.getItem(k);return v==null?d:JSON.parse(v)}catch(e){return d}};
 const setPref=(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}};
 $('#nSound').checked=pref('sound',true);$('#nBrowser').checked=pref('browserNotif',false)&&('Notification' in window)&&Notification.permission==='granted';
@@ -383,7 +383,7 @@ function renderAlerts(){const lv=$('#afLevel').value,dr=$('#afDir').value;const 
   $('#alertList').innerHTML=rows.map(a=>`<div class="alert-row ${a.level==='risk'?'risk':(a.direction||'')}"><div class="small">${fmtTs(a.ts)}</div><div class="lv">${a.level}</div><div><b>${esc(a.title)}</b><div class="small">${esc(a.body)}</div></div></div>`).join('')||'sem alertas';}
 async function pollAlerts(){try{const r=await api('/api/alerts?since='+lastAlertId);
   $('#chTelegram').textContent=r.channels.telegram?'✓ configurado':'✗';$('#chWebhook').textContent=r.channels.webhook?'✓ configurado':'✗';
-  if(r.alerts.length){r.alerts.sort((a,b)=>a.id-b.id);for(const a of r.alerts){lastAlertId=Math.max(lastAlertId,a.id);ALERTS.unshift(a);if(a.symbol!=='TEST'||true){toast(a);notify(a);}if(a.level==='setup')beep(a.direction);unread++;}ALERTS=ALERTS.slice(0,500);renderBell();renderAlerts();}
+  if(r.alerts.length){r.alerts.sort((a,b)=>a.id-b.id);const seed=!seeded;for(const a of r.alerts){lastAlertId=Math.max(lastAlertId,a.id);ALERTS.unshift(a);if(!seed){toast(a);notify(a);if(a.level==='setup')beep(a.direction);unread++;}}ALERTS=ALERTS.slice(0,500);renderBell();renderAlerts();}seeded=true;
   }catch(e){}}
 setInterval(pollAlerts,1500);pollAlerts();
 $('#bellBtn').onclick=()=>{document.querySelector('nav button[data-tab="alertas"]').click();unread=0;renderBell();};
